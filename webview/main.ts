@@ -165,7 +165,6 @@ setupConsoleLogging();
  * Compartments for dynamic reconfiguration
  */
 const modeCompartment = new Compartment();
-const themeCompartment = new Compartment();
 
 /**
  * Editor instance
@@ -192,11 +191,8 @@ function initializeEditor(): void {
   // Get initial mode from body data attribute
   const bodyElement = document.body;
   const initialMode = (bodyElement.dataset.mode as EditorMode) || 'livePreview';
-  const initialTheme = bodyElement.dataset.theme || 'light'; // Default to light, not dark!
 
-  console.log('[Webview] [THEME] Body data-theme attribute:', bodyElement.dataset.theme);
-  console.log('[Webview] [THEME] Resolved initial theme:', initialTheme);
-  console.log('[Webview] Initial mode:', initialMode, 'theme:', initialTheme);
+  console.log('[Webview] Initial mode:', initialMode);
   currentMode = initialMode;
 
   try {
@@ -208,7 +204,7 @@ function initializeEditor(): void {
         ...basicExtensions,
         markdown(),
         modeCompartment.of(getModeExtensions(initialMode)),
-        themeCompartment.of(getThemeExtensions(initialTheme)),
+        getThemeExtensions(),
         EditorView.updateListener.of((update) => {
           if (update.docChanged && !isUpdatingFromVSCode) {
             // Send edit message to mark document as dirty
@@ -265,10 +261,9 @@ function getModeExtensions(mode: EditorMode): any[] {
 }
 
 /**
- * Get theme extensions
+ * Get theme extensions (always light theme)
  */
-function getThemeExtensions(theme: string): any[] {
-  // Use VS Code's CSS variables for theming
+function getThemeExtensions(): any[] {
   return [
     syntaxHighlighting(defaultHighlightStyle),
     EditorView.theme({
@@ -366,34 +361,6 @@ function updateContent(content: string): void {
 }
 
 /**
- * Update theme
- */
-function updateTheme(theme: string): void {
-  console.log('[Webview] [THEME] updateTheme called with theme:', theme);
-
-  if (!editorView) {
-    console.warn('[Webview] [THEME] Cannot update theme: editor not initialized');
-    return;
-  }
-
-  try {
-    console.log('[Webview] [THEME] Setting body data-theme attribute to:', theme);
-    document.body.dataset.theme = theme;
-
-    console.log('[Webview] [THEME] Reconfiguring editor theme extensions');
-    editorView.dispatch({
-      effects: themeCompartment.reconfigure(getThemeExtensions(theme))
-    });
-
-    console.log('[Webview] [THEME] Theme successfully updated to:', theme);
-    log(`Theme updated to ${theme}`);
-  } catch (error) {
-    console.error('[Webview] [THEME] Failed to update theme:', error);
-    logError('Failed to update theme', error);
-  }
-}
-
-/**
  * Handle messages from VS Code
  */
 function handleMessage(event: MessageEvent): void {
@@ -410,31 +377,8 @@ function handleMessage(event: MessageEvent): void {
       switchMode(message.mode);
       break;
 
-    case 'themeChange':
-      console.log('[Webview] [THEME] Received themeChange message with theme:', message.theme);
-      updateTheme(message.theme);
-      break;
-
-    case 'fileInfo':
-      updateFileInfo(message.fileName, message.relativePath);
-      break;
-
     default:
       log(`Unknown message type: ${message.type}`);
-  }
-}
-
-/**
- * Update file info header
- */
-function updateFileInfo(fileName: string, relativePath: string): void {
-  const titleEl = document.getElementById('filename-title');
-  const pathEl = document.getElementById('filename-path');
-
-  if (titleEl && pathEl) {
-    titleEl.textContent = fileName;
-    titleEl.title = relativePath; // Tooltip
-    pathEl.textContent = relativePath;
   }
 }
 

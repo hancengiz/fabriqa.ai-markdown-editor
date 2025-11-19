@@ -11,7 +11,8 @@ export interface ConfigSection {
   id: string;
   title: string;
   collapsed?: boolean;
-  files: string[];
+  files?: string[];  // Explicit file paths
+  filePatterns?: string[];  // Glob patterns like "specs/**/*.md"
   description?: string;
 }
 
@@ -43,35 +44,14 @@ export interface ConfigError {
 }
 
 /**
- * Default configuration sections based on the spec
+ * Default configuration sections
+ * Uses glob patterns to auto-discover markdown files
  */
 export const DEFAULT_SECTIONS: ConfigSection[] = [
   {
     id: 'specs',
     title: 'SPECS',
     collapsed: false,
-    files: [],
-    description: 'Build complex features with structured planning'
-  },
-  {
-    id: 'agent-hooks',
-    title: 'AGENT HOOKS',
-    collapsed: false,
-    files: [],
-    description: 'Automate repetitive tasks with smart triggers'
-  },
-  {
-    id: 'agent-steering',
-    title: 'AGENT STEERING',
-    collapsed: false,
-    files: [],
-    description: 'Guide agent behavior and responses'
-  },
-  {
-    id: 'mcp-servers',
-    title: 'MCP SERVERS',
-    collapsed: false,
-    files: [],
-    description: 'Connect external tools and data sources'
+    filePatterns: ['specs/**/*.md']
   }
 ];

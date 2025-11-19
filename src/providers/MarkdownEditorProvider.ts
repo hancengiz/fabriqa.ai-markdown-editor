@@ -74,10 +74,8 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
     // Set initial HTML content
     webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview);
 
-    // Send initial document content and theme to webview
+    // Send initial document content to webview
     this.updateWebview(webviewPanel.webview, document);
-    this.sendThemeUpdate(webviewPanel.webview); // Send initial theme
-    this.sendFileInfo(webviewPanel.webview, document);
 
     // Handle messages from webview
     webviewPanel.webview.onDidReceiveMessage(
@@ -100,28 +98,6 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
     // Clean up when webview is disposed
     webviewPanel.onDidDispose(() => {
       changeDocumentSubscription.dispose();
-      changeThemeSubscription.dispose();
-      this.activeWebviews.delete(document.uri.toString());
-    });
-
-    // Handle theme changes
-    const changeThemeSubscription = vscode.window.onDidChangeActiveColorTheme(() => {
-      this.sendThemeUpdate(webviewPanel.webview);
-    });
-
-    // Handle configuration changes
-    const changeConfigSubscription = vscode.workspace.onDidChangeConfiguration(e => {
-      if (e.affectsConfiguration('fabriqa.theme')) {
-        this.sendThemeUpdate(webviewPanel.webview);
-      }
-    });
-
-    // Update cleanup to dispose config subscription
-    const originalDispose = webviewPanel.onDidDispose;
-    webviewPanel.onDidDispose(() => {
-      changeDocumentSubscription.dispose();
-      changeThemeSubscription.dispose();
-      changeConfigSubscription.dispose();
       this.activeWebviews.delete(document.uri.toString());
 
       // Clear current active panel if this was it
@@ -139,65 +115,6 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
       type: 'update',
       content: document.getText(),
       uri: document.uri.toString()
-    });
-  }
-
-  /**
-   * Send theme update to webview
-   */
-  private sendThemeUpdate(webview: vscode.Webview): void {
-    const config = vscode.workspace.getConfiguration('fabriqa');
-    const themeSetting = config.get<string>('theme');
-
-    // Check if this is a default value or user-set value
-    const inspected = config.inspect<string>('theme');
-    Logger.info(`[Theme] ==== SEND THEME UPDATE ====`);
-    Logger.info(`[Theme] Config default: "${inspected?.defaultValue}"`);
-    Logger.info(`[Theme] Config global: "${inspected?.globalValue}"`);
-    Logger.info(`[Theme] Config workspace: "${inspected?.workspaceValue}"`);
-    Logger.info(`[Theme] Resolved value: "${themeSetting}"`);
-
-    // Determine actual theme to use - default to light if not set or invalid
-    let themeType: string;
-    if (!themeSetting || themeSetting === 'auto') {
-      // If not set or old 'auto' value, default to light
-      themeType = 'light';
-      Logger.info(`[Theme] DECISION: No theme or 'auto' → LIGHT`);
-    } else if (themeSetting === 'vscode') {
-      // Follow VS Code's theme
-      const vsCodeTheme = vscode.window.activeColorTheme.kind;
-      themeType = vsCodeTheme === vscode.ColorThemeKind.Light ? 'light' : 'dark';
-      Logger.info(`[Theme] DECISION: Following VS Code (kind=${vsCodeTheme}) → ${themeType.toUpperCase()}`);
-    } else {
-      // Use user's explicit choice (light or dark)
-      themeType = themeSetting;
-      Logger.info(`[Theme] DECISION: Explicit setting → ${themeType.toUpperCase()}`);
-    }
-
-    Logger.info(`[Theme] POSTING themeChange message with theme: ${themeType}`);
-    webview.postMessage({
-      type: 'themeChange',
-      theme: themeType
-    });
-  }
-
-
-  /**
-   * Send file info to webview
-   */
-  private sendFileInfo(webview: vscode.Webview, document: vscode.TextDocument): void {
-    const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-    const fileName = path.basename(document.uri.fsPath);
-    let relativePath = document.uri.fsPath;
-
-    if (workspaceFolder) {
-      relativePath = path.relative(workspaceFolder.uri.fsPath, document.uri.fsPath);
-    }
-
-    webview.postMessage({
-      type: 'fileInfo',
-      fileName: fileName,
-      relativePath: relativePath
     });
   }
 
@@ -294,33 +211,9 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
     const defaultMode = config.get<EditorMode>('defaultMode', 'livePreview');
     const fontSize = config.get<number>('fontSize', 14);
     const lineHeight = config.get<number>('lineHeight', 1.6);
-    const themeSetting = config.get<string>('theme');
 
-    // Log all theme-related info for debugging
-    Logger.info(`[Theme] ==== THEME CONFIGURATION DEBUG ====`);
-    Logger.info(`[Theme] Raw theme setting from config: "${themeSetting}"`);
-    Logger.info(`[Theme] Type of theme setting: ${typeof themeSetting}`);
-    Logger.info(`[Theme] VS Code current theme kind: ${vscode.window.activeColorTheme.kind}`);
-    Logger.info(`[Theme] VS Code theme name: ${vscode.window.activeColorTheme.name}`);
-
-    // Determine actual theme to use - default to light if not set or invalid
-    let themeType: string;
-    if (!themeSetting || themeSetting === 'auto') {
-      // If not set or old 'auto' value, default to light
-      themeType = 'light';
-      Logger.info(`[Theme] DECISION: No theme or 'auto' → defaulting to LIGHT`);
-    } else if (themeSetting === 'vscode') {
-      // Follow VS Code's theme
-      const vsCodeTheme = vscode.window.activeColorTheme.kind;
-      themeType = vsCodeTheme === vscode.ColorThemeKind.Light ? 'light' : 'dark';
-      Logger.info(`[Theme] DECISION: Following VS Code (kind=${vsCodeTheme}) → ${themeType.toUpperCase()}`);
-    } else {
-      // Use user's explicit choice (light or dark)
-      themeType = themeSetting;
-      Logger.info(`[Theme] DECISION: Using explicit setting → ${themeType.toUpperCase()}`);
-    }
-
-    Logger.info(`[Theme] FINAL: HTML body will have data-theme="${themeType}"`);
+    // Always use light theme
+    const themeType = 'light';
 
     return `<!DOCTYPE html>
 <html lang="en">
@@ -351,30 +244,10 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
       flex-direction: column;
     }
 
-    #filename-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 8px 16px;
-      background: var(--vscode-editor-background);
-      border-bottom: 1px solid var(--vscode-panel-border, #444);
-      font-size: 13px;
-    }
-
-    #filename-title {
-      font-weight: 600;
-      color: var(--vscode-editor-foreground);
-    }
-
-    #filename-path {
-      font-size: 11px;
-      color: var(--vscode-descriptionForeground, #888);
-      opacity: 0.7;
-    }
-
     #editor {
       flex: 1;
       overflow: auto;
+      height: 100%;
     }
 
     .cm-editor {
@@ -385,8 +258,8 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
       overflow: auto;
     }
 
-    /* Theme-specific CSS variables - use !important to override VS Code defaults */
-    body[data-theme="light"] {
+    /* Light theme CSS variables */
+    body {
       --vscode-editor-foreground: #000000 !important;
       --vscode-editor-background: #ffffff !important;
       --vscode-editorCursor-foreground: #000000 !important;
@@ -395,17 +268,6 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
       --vscode-symbolIcon-classForeground: #267f99 !important;
       --vscode-textCodeBlock-background: #f5f5f5 !important;
       --vscode-foreground: #3b3b3b !important;
-    }
-
-    body[data-theme="dark"] {
-      --vscode-editor-foreground: #d4d4d4 !important;
-      --vscode-editor-background: #1e1e1e !important;
-      --vscode-editorCursor-foreground: #aeafad !important;
-      --vscode-editor-selectionBackground: #264f78 !important;
-      --vscode-textLink-foreground: #3794ff !important;
-      --vscode-symbolIcon-classForeground: #4ec9b0 !important;
-      --vscode-textCodeBlock-background: #0a0a0a !important;
-      --vscode-foreground: #cccccc !important;
     }
 
     /* CodeMirror theme integration */
@@ -478,10 +340,6 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
   </style>
 </head>
 <body data-theme="${themeType}" data-mode="${defaultMode}">
-  <div id="filename-header">
-    <span id="filename-title"></span>
-    <span id="filename-path"></span>
-  </div>
   <div id="editor">
     <div class="loading">Loading editor...</div>
   </div>

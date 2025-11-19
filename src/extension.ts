@@ -68,41 +68,83 @@ function setupFileWatchers(
   treeProvider: MarkdownTreeProvider,
   configManager: ConfigManager
 ): void {
-  // Watch for changes to the config file
+  // Watch for changes to .fabriqa.sidebar.yml (primary config file)
+  const yamlConfigWatcher = vscode.workspace.createFileSystemWatcher(
+    new vscode.RelativePattern(
+      vscode.workspace.workspaceFolders![0],
+      '.fabriqa.sidebar.yml'
+    )
+  );
+
+  yamlConfigWatcher.onDidChange(() => {
+    Logger.info('.fabriqa.sidebar.yml changed, refreshing tree view');
+    configManager.reload();
+    treeProvider.refresh();
+  });
+
+  yamlConfigWatcher.onDidCreate(() => {
+    Logger.info('.fabriqa.sidebar.yml created, refreshing tree view');
+    configManager.reload();
+    treeProvider.refresh();
+  });
+
+  yamlConfigWatcher.onDidDelete(() => {
+    Logger.info('.fabriqa.sidebar.yml deleted, refreshing tree view');
+    configManager.reload();
+    treeProvider.refresh();
+  });
+
+  context.subscriptions.push(yamlConfigWatcher);
+
+  // Also watch for old JSON config (backward compatibility)
   const configPath = configManager.getConfigPath();
-  const configWatcher = vscode.workspace.createFileSystemWatcher(
+  const jsonConfigWatcher = vscode.workspace.createFileSystemWatcher(
     new vscode.RelativePattern(
       vscode.workspace.workspaceFolders![0],
       configPath
     )
   );
 
-  configWatcher.onDidChange(() => {
-    Logger.info('Config file changed, refreshing tree view');
+  jsonConfigWatcher.onDidChange(() => {
+    Logger.info('JSON config file changed, refreshing tree view');
     configManager.reload();
     treeProvider.refresh();
   });
 
-  configWatcher.onDidCreate(() => {
-    Logger.info('Config file created, refreshing tree view');
+  jsonConfigWatcher.onDidCreate(() => {
+    Logger.info('JSON config file created, refreshing tree view');
     configManager.reload();
     treeProvider.refresh();
   });
 
-  configWatcher.onDidDelete(() => {
-    Logger.info('Config file deleted, refreshing tree view');
+  jsonConfigWatcher.onDidDelete(() => {
+    Logger.info('JSON config file deleted, refreshing tree view');
     configManager.reload();
     treeProvider.refresh();
   });
 
-  context.subscriptions.push(configWatcher);
+  context.subscriptions.push(jsonConfigWatcher);
 
   // Watch for markdown file changes
   const mdWatcher = vscode.workspace.createFileSystemWatcher('**/*.md');
 
-  mdWatcher.onDidCreate(() => treeProvider.refresh());
-  mdWatcher.onDidDelete(() => treeProvider.refresh());
-  mdWatcher.onDidChange(() => treeProvider.refresh());
+  mdWatcher.onDidCreate((uri) => {
+    Logger.info(`Markdown file created: ${uri.fsPath}`);
+    configManager.reload();
+    treeProvider.refresh();
+  });
+
+  mdWatcher.onDidDelete((uri) => {
+    Logger.info(`Markdown file deleted: ${uri.fsPath}`);
+    configManager.reload();
+    treeProvider.refresh();
+  });
+
+  mdWatcher.onDidChange((uri) => {
+    Logger.info(`Markdown file changed: ${uri.fsPath}`);
+    configManager.reload();
+    treeProvider.refresh();
+  });
 
   context.subscriptions.push(mdWatcher);
 }

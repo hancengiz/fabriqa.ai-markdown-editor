@@ -105,52 +105,65 @@ export function registerCommands(
         // Get section from tree item if available
         const section = treeItem?.section;
 
-        // Prompt for file name
-        const fileName = await vscode.window.showInputBox({
-          prompt: 'Enter file name (without .md extension)',
-          placeHolder: 'my-document',
-          validateInput: (value) => {
-            if (!value) {
-              return 'File name cannot be empty';
-            }
-            if (value.includes('/') || value.includes('\\')) {
-              return 'File name cannot contain path separators';
-            }
-            return null;
-          }
-        });
-
-        if (!fileName) {
-          return;
-        }
-
         // Get workspace root
         const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
         if (!workspaceRoot) {
           throw new Error('No workspace folder is open');
         }
 
-        // Determine file path
-        let filePath: string;
+        // Determine default directory path for the section
+        let defaultPath = '';
         if (section) {
-          // Create in section's directory (assume first file's directory)
+          // Try to get directory from first file in section
           const firstFile = section.files[0];
           if (firstFile) {
-            const dir = path.dirname(firstFile.absolutePath);
-            filePath = path.join(dir, `${fileName}.md`);
+            const relativeDir = path.dirname(firstFile.relativePath);
+            defaultPath = relativeDir === '.' ? '' : relativeDir + '/';
           } else {
-            // Section has no files, create in workspace root
-            filePath = path.join(workspaceRoot, `${fileName}.md`);
+            // No files in section - try to infer from section ID
+            // e.g., section.id = "specs" → "specs/"
+            defaultPath = section.id + '/';
           }
-        } else {
-          // No section specified, create in workspace root
-          filePath = path.join(workspaceRoot, `${fileName}.md`);
+        }
+
+        // Prompt for file path (relative to workspace)
+        const filePathInput = await vscode.window.showInputBox({
+          prompt: 'Enter file path relative to workspace (e.g., specs/my-file.md)',
+          placeHolder: 'specs/my-document.md',
+          value: defaultPath,
+          valueSelection: [defaultPath.length, defaultPath.length], // Cursor at end
+          validateInput: (value) => {
+            if (!value) {
+              return 'File path cannot be empty';
+            }
+            if (!value.endsWith('.md')) {
+              return 'File must have .md extension';
+            }
+            if (value.startsWith('/') || value.startsWith('\\')) {
+              return 'Path should be relative (don\'t start with /)';
+            }
+            return null;
+          }
+        });
+
+        if (!filePathInput) {
+          return;
+        }
+
+        // Construct absolute file path
+        const filePath = path.join(workspaceRoot, filePathInput);
+        const fileDir = path.dirname(filePath);
+
+        // Create directory if it doesn't exist
+        if (!fs.existsSync(fileDir)) {
+          fs.mkdirSync(fileDir, { recursive: true });
+          Logger.info(`Created directory: ${fileDir}`);
         }
 
         // Check if file already exists
         if (fs.existsSync(filePath)) {
           const overwrite = await vscode.window.showWarningMessage(
-            `File "${fileName}.md" already exists. Overwrite?`,
+            `File "${filePathInput}" already exists. Overwrite?`,
             'Yes', 'No'
           );
           if (overwrite !== 'Yes') {
@@ -159,10 +172,11 @@ export function registerCommands(
         }
 
         // Create file with template content
+        const fileName = path.basename(filePathInput, '.md');
         const content = `# ${fileName}\n\n`;
         fs.writeFileSync(filePath, content, 'utf-8');
 
-        // Refresh tree view
+        // Refresh tree view (file watcher will auto-refresh, but do it anyway)
         treeProvider.refresh();
 
         // Open the file
@@ -170,7 +184,7 @@ export function registerCommands(
         await vscode.commands.executeCommand('vscode.openWith', uri, 'fabriqa.markdownEditor');
 
         Logger.info(`Created new file: ${filePath}`);
-        vscode.window.showInformationMessage(`Created ${fileName}.md`);
+        vscode.window.showInformationMessage(`Created ${filePathInput}`);
       } catch (error) {
         Logger.error('Failed to create file', error);
         vscode.window.showErrorMessage(`Failed to create file: ${error}`);
@@ -294,11 +308,8 @@ export function registerCommands(
   // Show editor settings menu
   context.subscriptions.push(
     vscode.commands.registerCommand('fabriqa.showEditorSettings', async () => {
-      const config = vscode.workspace.getConfiguration('fabriqa');
-
-      // Get current values
+      // Get current mode
       const currentMode = editorProvider.getCurrentMode() || 'livePreview';
-      const currentTheme = config.get<string>('theme', 'light');
 
       // Build menu items
       const items = [
@@ -316,22 +327,6 @@ export function registerCommands(
           label: '$(book) Switch to Reading',
           description: currentMode === 'reading' ? '✓ Current' : '',
           action: 'mode:reading'
-        },
-        { label: '', kind: vscode.QuickPickItemKind.Separator },
-        {
-          label: '$(color-mode) Theme: Light',
-          description: currentTheme === 'light' ? '✓ Current' : '',
-          action: 'theme:light'
-        },
-        {
-          label: '$(color-mode) Theme: Dark',
-          description: currentTheme === 'dark' ? '✓ Current' : '',
-          action: 'theme:dark'
-        },
-        {
-          label: '$(color-mode) Theme: Follow VS Code',
-          description: currentTheme === 'vscode' ? '✓ Current' : '',
-          action: 'theme:vscode'
         },
         { label: '', kind: vscode.QuickPickItemKind.Separator },
         {
@@ -357,11 +352,6 @@ export function registerCommands(
           await editorProvider.switchMode(value as EditorMode);
           break;
 
-        case 'theme':
-          await config.update('theme', value, vscode.ConfigurationTarget.Global);
-          vscode.window.showInformationMessage(`Theme changed to: ${value}`);
-          break;
-
         case 'open':
           if (value === 'settings') {
             await vscode.commands.executeCommand('workbench.action.openSettings', '@ext:fabriqa.fabriqa-markdown-editor');
@@ -372,27 +362,5 @@ export function registerCommands(
   );
 
 
-  // Change theme
-  context.subscriptions.push(
-    vscode.commands.registerCommand('fabriqa.changeTheme', async () => {
-      const config = vscode.workspace.getConfiguration('fabriqa');
-      const currentTheme = config.get<string>('theme', 'light');
-
-      const themes = [
-        { label: 'Light', value: 'light', description: currentTheme === 'light' ? '✓ Current' : '' },
-        { label: 'Dark', value: 'dark', description: currentTheme === 'dark' ? '✓ Current' : '' },
-        { label: 'Follow VS Code', value: 'vscode', description: currentTheme === 'vscode' ? '✓ Current' : '' }
-      ];
-
-      const selected = await vscode.window.showQuickPick(themes, {
-        placeHolder: 'Select editor theme'
-      });
-
-      if (selected) {
-        await config.update('theme', selected.value, vscode.ConfigurationTarget.Global);
-        vscode.window.showInformationMessage(`Theme changed to: ${selected.label}`);
-      }
-    })
-  );
 }
 

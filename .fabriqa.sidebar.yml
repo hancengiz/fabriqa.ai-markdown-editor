@@ -1,0 +1,10 @@
+# Fabriqa Markdown Extension Configuration
+# Define which folders/files appear in the Fabriqa sidebar
+
+sections:
+  # SPECS section - project specifications and documentation
+  - id: specs
+    title: SPECS
+    collapsed: false
+    filePatterns:
+      - specs/**/*.md

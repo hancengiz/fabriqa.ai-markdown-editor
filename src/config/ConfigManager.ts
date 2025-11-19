@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
+import * as yaml from 'js-yaml';
 import { Logger } from '../utils/Logger';
 import {
   MarkdownConfig,
@@ -50,54 +51,63 @@ export class ConfigManager {
   }
 
   /**
-   * Load and validate the configuration file
+   * Load and validate the configuration
+   * Priority: .fabriqa.sidebar.yml > .vscode/markdown-extension-config.json > VS Code settings > defaults
    */
   private loadConfig(): ValidatedConfig {
+    // 1. Try .fabriqa.sidebar.yml in project root (highest priority)
+    const yamlConfigPath = path.join(this.workspaceRoot, '.fabriqa.sidebar.yml');
+    if (fs.existsSync(yamlConfigPath)) {
+      try {
+        Logger.info('Loading configuration from .fabriqa.sidebar.yml');
+        const fileContent = fs.readFileSync(yamlConfigPath, 'utf-8');
+        const rawConfig = yaml.load(fileContent) as MarkdownConfig;
+        return this.validateConfigAsync(rawConfig);
+      } catch (error) {
+        Logger.error('Failed to load .fabriqa.sidebar.yml', error);
+        vscode.window.showErrorMessage(`Failed to load .fabriqa.sidebar.yml: ${error}`);
+      }
+    }
+
+    // 2. Try .vscode/markdown-extension-config.json (backward compatibility)
     const absoluteConfigPath = path.join(this.workspaceRoot, this.configPath);
-
-    // Check if config file exists
-    if (!fs.existsSync(absoluteConfigPath)) {
-      Logger.warn(`Config file not found at ${absoluteConfigPath}, using defaults`);
-      return this.createDefaultConfig();
+    if (fs.existsSync(absoluteConfigPath)) {
+      try {
+        Logger.info('Loading configuration from .vscode/markdown-extension-config.json');
+        const fileContent = fs.readFileSync(absoluteConfigPath, 'utf-8');
+        const rawConfig: MarkdownConfig = JSON.parse(fileContent);
+        return this.validateConfigAsync(rawConfig);
+      } catch (error) {
+        Logger.error('Failed to load config file', error);
+        vscode.window.showErrorMessage(`Failed to load Fabriqa config file: ${error}`);
+      }
     }
 
-    try {
-      // Read and parse config file
-      const fileContent = fs.readFileSync(absoluteConfigPath, 'utf-8');
-      const rawConfig: MarkdownConfig = JSON.parse(fileContent);
+    // 3. Try VS Code settings
+    const vscodeConfig = vscode.workspace.getConfiguration('fabriqa');
+    const sidebarSections = vscodeConfig.get<any[]>('sidebarSections');
 
-      // Validate and resolve file paths
-      return this.validateConfig(rawConfig);
-    } catch (error) {
-      Logger.error('Failed to load config file', error);
-      vscode.window.showErrorMessage(
-        `Failed to load Fabriqa config file: ${error}`
-      );
-      return this.createDefaultConfig();
+    if (sidebarSections && sidebarSections.length > 0) {
+      Logger.info('Loading configuration from VS Code settings');
+      return this.validateConfigAsync({ sections: sidebarSections });
     }
+
+    // 4. Use defaults
+    Logger.info('Using default configuration');
+    return this.createDefaultConfig();
   }
 
   /**
    * Create default configuration
    */
   private createDefaultConfig(): ValidatedConfig {
-    return {
-      sections: DEFAULT_SECTIONS.map(section => ({
-        ...section,
-        collapsed: section.collapsed ?? false,
-        files: []
-      })),
-      errors: [{
-        message: 'Config file not found, using default sections',
-        type: 'warning'
-      }]
-    };
+    return this.validateConfigAsync({ sections: DEFAULT_SECTIONS });
   }
 
   /**
-   * Validate configuration and resolve file paths
+   * Validate configuration and resolve file paths (synchronous version using glob)
    */
-  private validateConfig(rawConfig: MarkdownConfig): ValidatedConfig {
+  private validateConfigAsync(rawConfig: MarkdownConfig): ValidatedConfig {
     const errors: ConfigError[] = [];
     const validatedSections: ValidatedSection[] = [];
 
@@ -120,28 +130,30 @@ export class ConfigManager {
         continue;
       }
 
-      if (!section.files || !Array.isArray(section.files)) {
-        errors.push({
-          section: section.id,
-          message: 'Section must have a "files" array',
-          type: 'error'
-        });
-        continue;
+      const resolvedFiles: ResolvedFile[] = [];
+
+      // Support filePatterns (glob patterns)
+      if (section.filePatterns && Array.isArray(section.filePatterns)) {
+        for (const pattern of section.filePatterns) {
+          const matchedFiles = this.resolveGlobPattern(pattern);
+          resolvedFiles.push(...matchedFiles);
+        }
       }
 
-      // Resolve file paths
-      const resolvedFiles: ResolvedFile[] = [];
-      for (const filePath of section.files) {
-        const resolved = this.resolveFilePath(filePath);
-        resolvedFiles.push(resolved);
+      // Support explicit files array
+      if (section.files && Array.isArray(section.files)) {
+        for (const filePath of section.files) {
+          const resolved = this.resolveFilePath(filePath);
+          resolvedFiles.push(resolved);
 
-        if (!resolved.exists) {
-          errors.push({
-            section: section.id,
-            file: filePath,
-            message: `File not found: ${filePath}`,
-            type: 'warning'
-          });
+          if (!resolved.exists) {
+            errors.push({
+              section: section.id,
+              file: filePath,
+              message: `File not found: ${filePath}`,
+              type: 'warning'
+            });
+          }
         }
       }
 
@@ -158,6 +170,67 @@ export class ConfigManager {
       sections: validatedSections,
       errors
     };
+  }
+
+  /**
+   * Resolve glob pattern to list of files
+   */
+  private resolveGlobPattern(pattern: string): ResolvedFile[] {
+    const files: ResolvedFile[] = [];
+
+    try {
+      // Simple glob implementation for patterns like "specs/**/*.md"
+      const parts = pattern.split('/');
+      const basePath = parts[0];
+      const isRecursive = parts.includes('**');
+      const filePattern = parts[parts.length - 1];
+
+      const searchPath = path.join(this.workspaceRoot, basePath);
+
+      if (!fs.existsSync(searchPath)) {
+        return files;
+      }
+
+      const matchFiles = (dir: string, recursive: boolean = false) => {
+        const entries = fs.readdirSync(dir, { withFileTypes: true });
+
+        for (const entry of entries) {
+          const fullPath = path.join(dir, entry.name);
+
+          if (entry.isDirectory() && (recursive || isRecursive)) {
+            matchFiles(fullPath, true);
+          } else if (entry.isFile()) {
+            // Check if file matches pattern (simple match for *.md)
+            if (filePattern === '*.md' && entry.name.endsWith('.md')) {
+              const relativePath = path.relative(this.workspaceRoot, fullPath);
+              files.push({
+                relativePath,
+                absolutePath: fullPath,
+                exists: true,
+                displayName: entry.name
+              });
+            } else if (entry.name === filePattern) {
+              const relativePath = path.relative(this.workspaceRoot, fullPath);
+              files.push({
+                relativePath,
+                absolutePath: fullPath,
+                exists: true,
+                displayName: entry.name
+              });
+            }
+          }
+        }
+      };
+
+      matchFiles(searchPath);
+
+      // Sort files by path for consistent ordering
+      files.sort((a, b) => a.relativePath.localeCompare(b.relativePath));
+    } catch (error) {
+      Logger.error(`Failed to resolve glob pattern ${pattern}`, error);
+    }
+
+    return files;
   }
 
   /**
