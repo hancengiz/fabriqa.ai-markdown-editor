@@ -36,6 +36,96 @@ class LinkWidget extends WidgetType {
 }
 
 /**
+ * Widget for clickable checkboxes in Live Preview
+ * Renders an actual HTML checkbox that can be clicked to toggle state
+ */
+class CheckboxWidget extends WidgetType {
+  constructor(
+    readonly checked: boolean,
+    readonly view: EditorView,
+    readonly pos: number
+  ) {
+    super();
+  }
+
+  toDOM() {
+    // Create a wrapper span to ensure proper event handling
+    const wrapper = document.createElement('span');
+    wrapper.className = 'cm-task-checkbox-wrapper';
+    wrapper.style.cssText = `
+      display: inline-block;
+      vertical-align: middle;
+      margin-right: 4px;
+    `;
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.checked = this.checked;
+    checkbox.className = 'cm-task-checkbox';
+    checkbox.style.cssText = `
+      cursor: pointer;
+      pointer-events: auto;
+      width: 16px;
+      height: 16px;
+      vertical-align: middle;
+    `;
+
+    // Handle checkbox click to toggle state in document
+    checkbox.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    });
+
+    checkbox.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      this.toggleCheckbox();
+    });
+
+    wrapper.appendChild(checkbox);
+    return wrapper;
+  }
+
+  toggleCheckbox() {
+    const line = this.view.state.doc.lineAt(this.pos);
+    const lineText = line.text;
+
+    // Find the checkbox pattern in the line (with or without list marker)
+    // Support [ ], [], and [x] patterns
+    const uncheckedMatch = lineText.match(/^(\s*)(?:[-*+]\s)?(\[(?:\s|)\])/);
+    const checkedMatch = lineText.match(/^(\s*)(?:[-*+]\s)?(\[x\])/i);
+
+    if (checkedMatch) {
+      // Change [x] to [ ]
+      const newLine = lineText.replace(/\[x\]/i, '[ ]');
+      this.view.dispatch({
+        changes: {
+          from: line.from,
+          to: line.to,
+          insert: newLine
+        }
+      });
+    } else if (uncheckedMatch) {
+      // Change [ ] or [] to [x]
+      const newLine = lineText.replace(/\[(?:\s|)\]/, '[x]');
+      this.view.dispatch({
+        changes: {
+          from: line.from,
+          to: line.to,
+          insert: newLine
+        }
+      });
+    }
+  }
+
+  ignoreEvent(event: Event) {
+    // Return TRUE to tell the editor to IGNORE the event (don't move cursor)
+    // The widget will handle the click itself
+    return event.type === 'mousedown' || event.type === 'click';
+  }
+}
+
+/**
  * Live Preview Mode Plugin (Obsidian-style)
  *
  * Hides markdown syntax except in the specific markdown element where the cursor is positioned.
@@ -86,7 +176,57 @@ export const livePreviewPlugin = ViewPlugin.fromClass(
         }
       });
 
+      // Add custom checkbox detection for patterns not recognized by syntax tree
+      // (e.g., checkboxes without list markers: "[ ] todo")
+      this.addCustomCheckboxDecorations(view, decorations, activeStructure, cursorPos);
+
       return Decoration.set(decorations, true);
+    }
+
+    /**
+     * Add custom checkbox decorations for patterns not in the syntax tree
+     * This handles checkboxes without list markers like: "[ ] todo"
+     */
+    addCustomCheckboxDecorations(
+      view: EditorView,
+      decorations: Range<Decoration>[],
+      activeStructure: SyntaxNode | null,
+      cursorPos: number
+    ): void {
+      const doc = view.state.doc;
+
+      for (let lineNum = 1; lineNum <= doc.lines; lineNum++) {
+        const line = doc.line(lineNum);
+        const lineText = line.text;
+
+        // Match checkbox patterns: [ ], [x], [] at start of line (with optional list marker)
+        const checkboxMatch = lineText.match(/^(\s*)((?:[-*+]\s)?)(\[(?:\s|x|X|)\])(?:\s|$)/);
+
+        if (checkboxMatch) {
+          const indent = checkboxMatch[1];
+          const listMarker = checkboxMatch[2];
+          const checkboxText = checkboxMatch[3];
+          const checkboxStart = line.from + indent.length + listMarker.length;
+          const checkboxEnd = checkboxStart + checkboxText.length;
+
+          // Obsidian-style behavior:
+          // - If cursor is on this line: show raw markdown (user can edit or use Cmd+Alt+T)
+          // - If cursor is NOT on this line: show checkbox widget (clickable)
+          if (cursorPos >= line.from && cursorPos <= line.to) {
+            // Cursor is on this line - skip widget, show raw markdown
+            continue;
+          }
+
+          // Render checkbox widget for inactive lines
+          const isChecked = checkboxText.toLowerCase().includes('x');
+
+          decorations.push(
+            Decoration.replace({
+              widget: new CheckboxWidget(isChecked, view, checkboxStart)
+            }).range(checkboxStart, checkboxEnd)
+          );
+        }
+      }
     }
 
     /**
@@ -273,10 +413,11 @@ export const livePreviewPlugin = ViewPlugin.fromClass(
           break;
 
         case 'TaskMarker':
-          // Style task list checkboxes
+          // Replace task list checkboxes with clickable widgets
+          const isChecked = nodeText.toLowerCase().includes('x');
           decorations.push(
-            Decoration.mark({
-              class: 'cm-task-marker'
+            Decoration.replace({
+              widget: new CheckboxWidget(isChecked, view, from)
             }).range(from, to)
           );
           break;

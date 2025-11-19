@@ -47,7 +47,7 @@ export const readingModePlugin = ViewPlugin.fromClass(
         // Convert markdown to HTML
         const rawHtml = marked.parse(markdown) as string;
 
-        // Sanitize HTML to prevent XSS
+        // Sanitize HTML to prevent XSS (allow input for checkboxes)
         const cleanHtml = DOMPurify.sanitize(rawHtml, {
           ALLOWED_TAGS: [
             'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
@@ -55,9 +55,9 @@ export const readingModePlugin = ViewPlugin.fromClass(
             'a', 'ul', 'ol', 'li',
             'blockquote', 'code', 'pre',
             'table', 'thead', 'tbody', 'tr', 'th', 'td',
-            'img', 'hr'
+            'img', 'hr', 'input'
           ],
-          ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'class']
+          ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'class', 'type', 'checked', 'disabled']
         });
 
         // Create or update HTML container
@@ -205,6 +205,17 @@ export const readingModePlugin = ViewPlugin.fromClass(
               max-width: 100%;
               height: auto;
             }
+
+            /* Task list checkboxes */
+            .reading-mode-content input[type="checkbox"] {
+              cursor: pointer;
+              margin-right: 8px;
+            }
+
+            .reading-mode-content li:has(> input[type="checkbox"]) {
+              list-style: none;
+              margin-left: -2em;
+            }
           `;
           document.head.appendChild(style);
 
@@ -220,6 +231,9 @@ export const readingModePlugin = ViewPlugin.fromClass(
 
         // Update content
         this.htmlContainer.innerHTML = cleanHtml;
+
+        // Make checkboxes interactive
+        this.setupCheckboxHandlers(view);
       } catch (error) {
         console.error('Failed to render markdown:', error);
         if (this.htmlContainer) {
@@ -230,6 +244,55 @@ export const readingModePlugin = ViewPlugin.fromClass(
           `;
         }
       }
+    }
+
+    /**
+     * Setup click handlers for checkboxes in reading mode
+     * Allows toggling task list items by clicking checkboxes
+     */
+    setupCheckboxHandlers(view: EditorView) {
+      if (!this.htmlContainer) return;
+
+      const checkboxes = this.htmlContainer.querySelectorAll('input[type="checkbox"]');
+
+      checkboxes.forEach((checkbox, index) => {
+        checkbox.addEventListener('click', (e) => {
+          e.preventDefault(); // Prevent default to handle manually
+
+          const isChecked = (checkbox as HTMLInputElement).checked;
+          const newChecked = !isChecked;
+
+          // Find the checkbox in the markdown source
+          const doc = view.state.doc;
+          let checkboxCount = 0;
+
+          for (let lineNum = 1; lineNum <= doc.lines; lineNum++) {
+            const line = doc.line(lineNum);
+            const lineText = line.text;
+
+            // Check if this line has a checkbox (with or without list marker)
+            // Support [ ], [], and [x] patterns
+            if (lineText.match(/^(\s*)(?:[-*+]\s)?\[(?:\s|x|X|)\]/)) {
+              if (checkboxCount === index) {
+                // This is the checkbox we clicked
+                const newLine = newChecked
+                  ? lineText.replace(/\[(?:\s|)\]/, '[x]')
+                  : lineText.replace(/\[x\]/i, '[ ]');
+
+                view.dispatch({
+                  changes: {
+                    from: line.from,
+                    to: line.to,
+                    insert: newLine
+                  }
+                });
+                return;
+              }
+              checkboxCount++;
+            }
+          }
+        });
+      });
     }
   }
 );
