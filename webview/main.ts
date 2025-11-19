@@ -42,6 +42,9 @@ const basicExtensions = [
 // Type definitions for VS Code API
 declare const acquireVsCodeApi: any;
 
+// Immediate debug log
+console.log('[Webview] Script loaded at', new Date().toISOString());
+
 /**
  * Editor modes
  */
@@ -50,7 +53,16 @@ type EditorMode = 'livePreview' | 'source' | 'reading';
 /**
  * VS Code webview API
  */
-const vscode = acquireVsCodeApi();
+let vscode: any;
+try {
+  vscode = acquireVsCodeApi();
+  console.log('[Webview] VS Code API acquired');
+} catch (error) {
+  console.error('[Webview] Failed to acquire VS Code API', error);
+  vscode = {
+    postMessage: (msg: any) => console.log('[Mock] Would send message:', msg)
+  };
+}
 
 /**
  * Compartments for dynamic reconfiguration
@@ -70,20 +82,26 @@ let isUpdatingFromVSCode = false;
  * Initialize the editor
  */
 function initializeEditor(): void {
+  console.log('[Webview] initializeEditor called');
   const container = document.getElementById('editor');
   if (!container) {
+    console.error('[Webview] Editor container not found!');
     logError('Editor container not found');
     return;
   }
+
+  console.log('[Webview] Editor container found');
 
   // Get initial mode from body data attribute
   const bodyElement = document.body;
   const initialMode = (bodyElement.dataset.mode as EditorMode) || 'livePreview';
   const initialTheme = bodyElement.dataset.theme || 'dark';
 
+  console.log('[Webview] Initial mode:', initialMode, 'theme:', initialTheme);
   currentMode = initialMode;
 
   try {
+    console.log('[Webview] Creating EditorState...');
     // Create editor state
     const startState = EditorState.create({
       doc: '',
@@ -106,17 +124,22 @@ function initializeEditor(): void {
       ]
     });
 
+    console.log('[Webview] EditorState created, creating EditorView...');
+
     // Create editor view
     editorView = new EditorView({
       state: startState,
       parent: container
     });
 
+    console.log('[Webview] EditorView created successfully!');
     log(`Editor initialized in ${initialMode} mode`);
 
     // Notify VS Code that webview is ready
     sendMessage({ type: 'ready' });
+    console.log('[Webview] Ready message sent');
   } catch (error) {
+    console.error('[Webview] Initialization error:', error);
     logError('Failed to initialize editor', error);
     showError('Failed to initialize editor. Check console for details.');
   }
@@ -330,13 +353,20 @@ function showError(message: string): void {
 /**
  * Initialize when DOM is ready
  */
+console.log('[Webview] Document readyState:', document.readyState);
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initializeEditor);
+  console.log('[Webview] Waiting for DOMContentLoaded...');
+  document.addEventListener('DOMContentLoaded', () => {
+    console.log('[Webview] DOMContentLoaded fired');
+    initializeEditor();
+  });
 } else {
+  console.log('[Webview] DOM already loaded, initializing immediately');
   initializeEditor();
 }
 
 /**
  * Listen for messages from VS Code
  */
+console.log('[Webview] Adding message listener');
 window.addEventListener('message', handleMessage);
