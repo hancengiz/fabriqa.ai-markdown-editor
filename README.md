@@ -9,12 +9,12 @@ An Obsidian-like markdown editor extension for Visual Studio Code with three edi
 ## Screenshots
 
 ### Organized Sidebar & Live Preview Mode
-![fabriqa.ai sidebar with markdown files organized by sections](screenshots/screenshot-1.png)
+![fabriqa.ai sidebar with markdown files organized by sections](https://raw.githubusercontent.com/hancengiz/fabriqa.ai.markdown.editor/master/screenshots/screenshot-1.png)
 
 The extension provides a custom sidebar to organize your markdown files by sections using glob patterns. Files are automatically discovered and grouped based on your configuration.
 
 ### Mode Switching Menu
-![Mode switching menu showing Live Preview, Source, and Reading modes](screenshots/screenshot-2.png)
+![Mode switching menu showing Live Preview, Source, and Reading modes](https://raw.githubusercontent.com/hancengiz/fabriqa.ai.markdown.editor/master/screenshots/screenshot-2.png)
 
 Quickly switch between editing modes using the settings menu in the editor toolbar, or use keyboard shortcuts for faster navigation.
 
@@ -115,10 +115,6 @@ Configure the extension in VS Code settings (`Cmd/Ctrl + ,`):
 ## License
 
 MIT
-
-## Contributing
-
-Contributions are welcome! See [DEVELOPMENT.md](DEVELOPMENT.md) for development setup and guidelines.
 
 ## Credits
 

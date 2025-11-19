@@ -176,6 +176,9 @@ export const livePreviewPlugin = ViewPlugin.fromClass(
       const decorations: Range<Decoration>[] = [];
       const cursorPos = view.state.selection.main.head;
 
+      // Track which ranges we've already decorated to avoid duplicates
+      const decoratedRanges = new Set<string>();
+
       // Find the active markdown structure containing the cursor
       // This could be a specific inline element like one bold section: **text**
       const activeStructure = this.findActiveStructure(view, cursorPos);
@@ -185,14 +188,21 @@ export const livePreviewPlugin = ViewPlugin.fromClass(
         enter: (node) => {
           // Skip decorating nodes that are part of the active structure
           // This includes the structure itself and all its children (e.g., the ** marks)
-          if (activeStructure && node.from >= activeStructure.from && node.to <= activeStructure.to) {
+          if (activeStructure && this.isWithinActiveStructure(node, activeStructure)) {
             // Return false to skip this node and its children entirely
             // This means syntax will remain visible for the active element
             return false;
           }
 
+          // Check if we've already decorated this range
+          const rangeKey = `${node.from}-${node.to}`;
+          if (decoratedRanges.has(rangeKey)) {
+            return false;
+          }
+
           // For all other nodes, apply decorations (hide syntax)
           this.processNode(node, view, decorations);
+          decoratedRanges.add(rangeKey);
         }
       });
 
@@ -201,6 +211,15 @@ export const livePreviewPlugin = ViewPlugin.fromClass(
       this.addCustomCheckboxDecorations(view, decorations, activeStructure, cursorPos);
 
       return Decoration.set(decorations, true);
+    }
+
+    /**
+     * Check if a node is within the active structure
+     * Uses strict containment to avoid edge case issues
+     */
+    isWithinActiveStructure(node: SyntaxNode, activeStructure: SyntaxNode): boolean {
+      // Node is within active structure if it's completely contained
+      return node.from >= activeStructure.from && node.to <= activeStructure.to;
     }
 
     /**
@@ -262,7 +281,18 @@ export const livePreviewPlugin = ViewPlugin.fromClass(
       syntaxTree(view.state).iterate({
         enter: (node) => {
           // Check if cursor is within this node's range
-          const cursorInNode = cursorPos >= node.from && cursorPos <= node.to;
+          // For inline structures, cursor must be strictly inside (not at exact boundary)
+          // This prevents issues when cursor is between two inline elements
+          const isInlineStructure = ['Emphasis', 'StrongEmphasis', 'Link', 'InlineCode', 'Strikethrough'].includes(node.type.name);
+
+          let cursorInNode: boolean;
+          if (isInlineStructure) {
+            // For inline: cursor must be strictly inside, not at the boundary
+            cursorInNode = cursorPos > node.from && cursorPos < node.to;
+          } else {
+            // For block-level: cursor can be at boundary
+            cursorInNode = cursorPos >= node.from && cursorPos <= node.to;
+          }
 
           if (!cursorInNode) {
             return false; // Don't explore this branch
