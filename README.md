@@ -29,39 +29,9 @@ Quickly switch between editing modes using the settings menu in the editor toolb
 
 ## Getting Started
 
-### 1. Create Configuration File
+### 1. (Optional) Create Configuration File
 
-**Option A: YAML Configuration** (Recommended)
-
-Create a `.fabriqa.sidebar.yml` file in your workspace:
-
-```yaml
-sections:
-  - id: specs
-    title: SPECS
-    collapsed: false
-    filePatterns:
-      - specs/**/*.md
-    description: Build complex features with structured planning
-
-  - id: docs
-    title: DOCS
-    collapsed: false
-    filePatterns:
-      - docs/**/*.md
-    description: Documentation files
-
-  - id: notes
-    title: NOTES
-    collapsed: true
-    filePatterns:
-      - notes/**/*.md
-    description: Personal notes and ideas
-```
-
-**Option B: JSON Configuration**
-
-Create a `.vscode/markdown-extension-config.json` file:
+To organize your markdown files into custom sections in the sidebar, create a `.vscode/markdown-extension-config.json` file in your workspace:
 
 ```json
 {
