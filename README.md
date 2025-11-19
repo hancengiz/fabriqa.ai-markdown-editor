@@ -19,7 +19,37 @@ An Obsidian-like markdown editor extension for Visual Studio Code with three edi
 
 ### 1. Create Configuration File
 
-Create a `.vscode/markdown-extension-config.json` file in your workspace:
+**Option A: YAML Configuration** (Recommended)
+
+Create a `.fabriqa.sidebar.yml` file in your workspace:
+
+```yaml
+sections:
+  - id: specs
+    title: SPECS
+    collapsed: false
+    filePatterns:
+      - specs/**/*.md
+    description: Build complex features with structured planning
+
+  - id: docs
+    title: DOCS
+    collapsed: false
+    filePatterns:
+      - docs/**/*.md
+    description: Documentation files
+
+  - id: notes
+    title: NOTES
+    collapsed: true
+    filePatterns:
+      - notes/**/*.md
+    description: Personal notes and ideas
+```
+
+**Option B: JSON Configuration**
+
+Create a `.vscode/markdown-extension-config.json` file:
 
 ```json
 {
@@ -28,9 +58,8 @@ Create a `.vscode/markdown-extension-config.json` file in your workspace:
       "id": "specs",
       "title": "SPECS",
       "collapsed": false,
-      "files": [
-        "docs/requirements.md",
-        "docs/design.md"
+      "filePatterns": [
+        "specs/**/*.md"
       ],
       "description": "Build complex features with structured planning"
     },
@@ -38,15 +67,16 @@ Create a `.vscode/markdown-extension-config.json` file in your workspace:
       "id": "notes",
       "title": "NOTES",
       "collapsed": false,
-      "files": [
-        "notes/daily.md",
-        "notes/ideas.md"
+      "filePatterns": [
+        "notes/**/*.md"
       ],
       "description": "Personal notes and ideas"
     }
   ]
 }
 ```
+
+**Note**: Use `filePatterns` with glob patterns for automatic file discovery. Files are discovered automatically - no need to list them individually!
 
 ### 2. Open Markdown Files
 
@@ -64,81 +94,30 @@ Use the toolbar buttons at the top of the editor:
 
 Configure the extension in VS Code settings (`Cmd/Ctrl + ,`):
 
-- `fabriqa.configFile`: Path to config file (default: `.vscode/markdown-extension-config.json`)
 - `fabriqa.defaultMode`: Default editing mode (`livePreview`, `source`, or `reading`)
-- `fabriqa.theme`: Editor theme (`auto`, `light`, or `dark`)
 - `fabriqa.fontSize`: Font size for the editor (default: 14)
 - `fabriqa.lineHeight`: Line height multiplier (default: 1.6)
-- `fabriqa.autoSave`: Auto-save changes (default: true)
+- `fabriqa.sidebarSections`: Configure sidebar sections with glob patterns
 
-## Development
+## Keyboard Shortcuts
 
-### Prerequisites
+### Mode Switching
+- `Cmd+Shift+P` / `Ctrl+Shift+P` - Switch to Live Preview
+- `Cmd+Shift+S` / `Ctrl+Shift+S` - Switch to Source Mode
+- `Cmd+Shift+R` / `Ctrl+Shift+R` - Switch to Reading Mode
 
-- Node.js 20+
-- npm or yarn
-- Visual Studio Code
-
-### Setup
-
-```bash
-# Install dependencies
-npm install
-
-# Build extension
-npm run build
-
-# Watch for changes
-npm run watch
-
-# Run tests
-npm test
-```
-
-### Project Structure
-
-```
-vscode-extension1/
-├── src/
-│   ├── extension.ts           # Extension entry point
-│   ├── config/
-│   │   ├── ConfigManager.ts   # Config file handling
-│   │   └── types.ts           # Type definitions
-│   ├── providers/
-│   │   ├── MarkdownTreeProvider.ts      # Sidebar tree view
-│   │   └── MarkdownEditorProvider.ts    # Custom editor
-│   ├── commands/
-│   │   └── index.ts           # Command registrations
-│   └── utils/
-│       └── Logger.ts          # Logging utility
-├── webview/
-│   ├── main.ts                # Webview entry point
-│   └── editors/
-│       ├── livePreviewMode.ts # Live preview plugin
-│       └── readingMode.ts     # Reading mode plugin
-├── specs/
-│   ├── requirements.md        # Product requirements
-│   ├── design.md             # Technical design
-│   └── tasks.md              # Implementation tasks
-└── package.json
-
-```
-
-## Architecture
-
-The extension uses VS Code's Custom Editor API with a webview-based editor:
-
-1. **Extension Host** (Node.js): Handles file operations, configuration, and VS Code integration
-2. **Webview** (Browser): Runs CodeMirror 6 editor with custom plugins
-3. **Communication**: Messages between extension host and webview for synchronization
-
-## Technology Stack
-
-- **Editor**: CodeMirror 6
-- **Markdown Parsing**: @lezer/markdown
-- **HTML Rendering**: marked.js + DOMPurify
-- **Build Tool**: esbuild
-- **Language**: TypeScript
+### Markdown Formatting (Cmd+Option on Mac, Ctrl+Alt on Windows/Linux)
+- `Cmd+Option+B` / `Ctrl+Alt+B` - Bold
+- `Cmd+Option+I` / `Ctrl+Alt+I` - Italic
+- `Cmd+Option+X` / `Ctrl+Alt+X` - Strikethrough
+- `Cmd+Option+C` / `Ctrl+Alt+C` - Inline code
+- `Cmd+Option+E` / `Ctrl+Alt+E` - Code block
+- `Cmd+Option+K` / `Ctrl+Alt+K` - Insert link
+- `Cmd+Option+H` / `Ctrl+Alt+H` - Toggle heading (cycles H1-H6)
+- `Cmd+Option+8` / `Ctrl+Alt+8` - Bullet list
+- `Cmd+Option+7` / `Ctrl+Alt+7` - Numbered list
+- `Cmd+Option+Q` / `Ctrl+Alt+Q` - Blockquote
+- `Cmd+Option+T` / `Ctrl+Alt+T` - Toggle checkbox
 
 ## Commands
 
@@ -157,7 +136,7 @@ MIT
 
 ## Contributing
 
-Contributions are welcome! Please read the contributing guidelines before submitting PRs.
+Contributions are welcome! See [DEVELOPMENT.md](DEVELOPMENT.md) for development setup and guidelines.
 
 ## Credits
 
