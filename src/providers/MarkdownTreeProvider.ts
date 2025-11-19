@@ -46,12 +46,17 @@ export class MarkdownTreeItem extends vscode.TreeItem {
       this.tooltip = file?.relativePath;
       this.resourceUri = file ? vscode.Uri.file(file.absolutePath) : undefined;
 
-      // Set resourceUri without a command to let VS Code handle clicks naturally:
-      // - Single-click: Opens in preview mode (unsticky tab)
-      // - Double-click: Opens in permanent mode (sticky tab)
-      //
-      // VS Code will automatically open with the default editor for .md files,
-      // which we set to Fabriqa in package.json with priority: "default"
+      // Explicitly open with Fabriqa editor when clicking from sidebar
+      // This ensures files from Fabriqa sidebar always use Fabriqa editor,
+      // while files from explorer can use any editor (based on user choice)
+      // The command handles both single-click (preview) and double-click (permanent)
+      if (file) {
+        this.command = {
+          command: 'fabriqa.openMarkdownEditor',
+          title: 'Open with Fabriqa Editor',
+          arguments: [file.absolutePath, true] // path, preview mode (will be overridden by double-click detection)
+        };
+      }
 
       // Show warning for non-existent files
       if (file && !file.exists) {

@@ -16,6 +16,11 @@ export function registerCommands(
   editorProvider: MarkdownEditorProvider,
   configManager: ConfigManager
 ): void {
+  // Track last click for double-click detection
+  let lastClickTime = 0;
+  let lastClickedFile = '';
+  const DOUBLE_CLICK_THRESHOLD = 500; // milliseconds
+
   // Open markdown file with custom editor
   context.subscriptions.push(
     vscode.commands.registerCommand('fabriqa.openMarkdownEditor', async (filePathOrUri?: string | vscode.Uri, preview?: boolean) => {
@@ -41,14 +46,27 @@ export function registerCommands(
           uri = selected[0];
         }
 
+        // Detect double-click: if same file clicked within threshold
+        const now = Date.now();
+        const filePath = uri.fsPath;
+        const isDoubleClick = (now - lastClickTime < DOUBLE_CLICK_THRESHOLD) && (filePath === lastClickedFile);
+
+        lastClickTime = now;
+        lastClickedFile = filePath;
+
+        // Determine preview mode
+        let usePreview = preview !== false; // Default to preview
+        if (isDoubleClick) {
+          usePreview = false; // Double-click = permanent tab
+        }
+
         // Open with custom editor
-        // If preview is true, VS Code will open in preview mode (single-click)
-        // If preview is false or undefined, it opens permanently (double-click)
         await vscode.commands.executeCommand('vscode.openWith', uri, 'fabriqa.markdownEditor', {
-          preview: preview !== false // Default to preview mode
+          preview: usePreview,
+          preserveFocus: false
         });
 
-        Logger.info(`Opened file with fabriqa editor (preview: ${preview}): ${uri.fsPath}`);
+        Logger.info(`Opened file with fabriqa editor (preview: ${usePreview}, double-click: ${isDoubleClick}): ${uri.fsPath}`);
       } catch (error) {
         Logger.error('Failed to open file with fabriqa editor', error);
         vscode.window.showErrorMessage(`Failed to open file: ${error}`);
