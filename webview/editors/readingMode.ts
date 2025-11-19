@@ -65,7 +65,7 @@ export const readingModePlugin = ViewPlugin.fromClass(
           this.htmlContainer = document.createElement('div');
           this.htmlContainer.className = 'reading-mode-content';
 
-          // Apply GitHub markdown styling
+          // Apply markdown-preview-enhanced styling
           const style = document.createElement('style');
           style.textContent = `
 .reading-mode-content {

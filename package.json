@@ -138,6 +138,12 @@
         "title": "Editor Settings",
         "category": "fabriqa",
         "icon": "resources/fabriqa-toolbar-icon.svg"
+      },
+      {
+        "command": "fabriqa.createOrEditSidebarConfig",
+        "title": "Create/Edit Sidebar Config",
+        "category": "fabriqa",
+        "icon": "$(new-file)"
       }
     ],
     "menus": {

@@ -334,6 +334,11 @@ export function registerCommands(
       // Get current mode
       const currentMode = editorProvider.getCurrentMode() || 'livePreview';
 
+      // Check if .vscode/fabriqa-markdown-editor-config.json exists
+      const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+      const sidebarConfigPath = workspaceRoot ? path.join(workspaceRoot, '.vscode', 'fabriqa-markdown-editor-config.json') : null;
+      const sidebarConfigExists = sidebarConfigPath ? fs.existsSync(sidebarConfigPath) : false;
+
       // Build menu items
       const items = [
         {
@@ -356,6 +361,11 @@ export function registerCommands(
           label: '$(gear) Open Settings',
           description: 'Configure all fabriqa settings',
           action: 'open:settings'
+        },
+        {
+          label: sidebarConfigExists ? '$(file) Edit Sidebar Config' : '$(new-file) Create Sidebar Config',
+          description: sidebarConfigExists ? 'Edit .vscode/fabriqa-markdown-editor-config.json' : 'Create config with default settings',
+          action: 'sidebar:config'
         }
       ];
 
@@ -380,6 +390,77 @@ export function registerCommands(
             await vscode.commands.executeCommand('workbench.action.openSettings', '@ext:fabriqa.fabriqa-markdown-editor');
           }
           break;
+
+        case 'sidebar':
+          if (value === 'config') {
+            await vscode.commands.executeCommand('fabriqa.createOrEditSidebarConfig');
+          }
+          break;
+      }
+    })
+  );
+
+  // Create or edit sidebar config file
+  context.subscriptions.push(
+    vscode.commands.registerCommand('fabriqa.createOrEditSidebarConfig', async () => {
+      try {
+        const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+        if (!workspaceRoot) {
+          vscode.window.showErrorMessage('No workspace folder is open');
+          return;
+        }
+
+        // Create .vscode directory if it doesn't exist
+        const vscodeDir = path.join(workspaceRoot, '.vscode');
+        if (!fs.existsSync(vscodeDir)) {
+          fs.mkdirSync(vscodeDir, { recursive: true });
+        }
+
+        const sidebarConfigPath = path.join(vscodeDir, 'fabriqa-markdown-editor-config.json');
+        const configExists = fs.existsSync(sidebarConfigPath);
+
+        // If file doesn't exist, create it with default content
+        if (!configExists) {
+          const defaultContent = {
+            sections: [
+              {
+                id: "docs",
+                title: "DOCUMENTATION",
+                collapsed: false,
+                filePatterns: [
+                  "docs/**/*.md"
+                ],
+                description: "Documentation files"
+              },
+              {
+                id: "specs",
+                title: "SPECS",
+                collapsed: false,
+                filePatterns: [
+                  "specs/**/*.md"
+                ],
+                description: "Specification files"
+              }
+            ]
+          };
+
+          fs.writeFileSync(sidebarConfigPath, JSON.stringify(defaultContent, null, 2), 'utf-8');
+          Logger.info(`Created sidebar config: ${sidebarConfigPath}`);
+          vscode.window.showInformationMessage('Created .vscode/fabriqa-markdown-editor-config.json with default settings');
+        }
+
+        // Open the file
+        const uri = vscode.Uri.file(sidebarConfigPath);
+        await vscode.commands.executeCommand('vscode.open', uri);
+
+        // Refresh tree view to pick up changes
+        setTimeout(() => {
+          treeProvider.refresh();
+        }, 500);
+
+      } catch (error) {
+        Logger.error('Failed to create/edit sidebar config', error);
+        vscode.window.showErrorMessage(`Failed to create/edit config: ${error}`);
       }
     })
   );
