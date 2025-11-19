@@ -150,6 +150,26 @@
         }
       ]
     },
+    "keybindings": [
+      {
+        "command": "kiro.switchToLivePreview",
+        "key": "ctrl+shift+p",
+        "mac": "cmd+shift+p",
+        "when": "activeCustomEditorId == kiro.markdownEditor"
+      },
+      {
+        "command": "kiro.switchToSource",
+        "key": "ctrl+shift+s",
+        "mac": "cmd+shift+s",
+        "when": "activeCustomEditorId == kiro.markdownEditor"
+      },
+      {
+        "command": "kiro.switchToReading",
+        "key": "ctrl+shift+r",
+        "mac": "cmd+shift+r",
+        "when": "activeCustomEditorId == kiro.markdownEditor"
+      }
+    ],
     "configuration": {
       "title": "Kiro Markdown Editor",
       "properties": {

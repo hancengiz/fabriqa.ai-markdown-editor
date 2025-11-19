@@ -185,6 +185,16 @@ function switchMode(newMode: EditorMode): void {
     });
 
     currentMode = newMode;
+
+    // Update body attribute for CSS
+    document.body.dataset.mode = newMode;
+
+    // Notify extension of mode change
+    sendMessage({
+      type: 'modeChanged',
+      mode: newMode
+    });
+
     log(`Switched to ${newMode} mode`);
   } catch (error) {
     logError('Failed to switch mode', error);

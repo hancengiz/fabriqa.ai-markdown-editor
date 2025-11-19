@@ -53,21 +53,21 @@ export function registerCommands(
   // Switch to Live Preview mode
   context.subscriptions.push(
     vscode.commands.registerCommand('kiro.switchToLivePreview', async () => {
-      await switchEditorMode('livePreview');
+      await editorProvider.switchMode('livePreview');
     })
   );
 
   // Switch to Source mode
   context.subscriptions.push(
     vscode.commands.registerCommand('kiro.switchToSource', async () => {
-      await switchEditorMode('source');
+      await editorProvider.switchMode('source');
     })
   );
 
   // Switch to Reading mode
   context.subscriptions.push(
     vscode.commands.registerCommand('kiro.switchToReading', async () => {
-      await switchEditorMode('reading');
+      await editorProvider.switchMode('reading');
     })
   );
 
@@ -265,13 +265,3 @@ export function registerCommands(
   );
 }
 
-/**
- * Switch editor mode (helper function)
- */
-async function switchEditorMode(mode: EditorMode): Promise<void> {
-  // This will be implemented later when we add webview communication
-  vscode.window.showInformationMessage(`Switched to ${mode} mode`);
-  Logger.info(`Switched to ${mode} mode`);
-
-  // TODO: Send message to active webview to change mode
-}

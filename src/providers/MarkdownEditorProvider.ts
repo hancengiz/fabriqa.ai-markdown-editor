@@ -21,6 +21,7 @@ export interface WebviewMessage {
  */
 export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
   private static readonly viewType = 'kiro.markdownEditor';
+  private activeWebviews = new Map<string, { panel: vscode.WebviewPanel; mode: EditorMode }>();
 
   constructor(
     private readonly context: vscode.ExtensionContext,
@@ -46,6 +47,16 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
       ]
     };
 
+    // Get default mode from settings
+    const config = vscode.workspace.getConfiguration('kiro');
+    const defaultMode = config.get<EditorMode>('defaultMode', 'livePreview');
+
+    // Track this webview
+    this.activeWebviews.set(document.uri.toString(), {
+      panel: webviewPanel,
+      mode: defaultMode
+    });
+
     // Set initial HTML content
     webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview);
 
@@ -54,7 +65,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
 
     // Handle messages from webview
     webviewPanel.webview.onDidReceiveMessage(
-      message => this.handleWebviewMessage(message, document),
+      message => this.handleWebviewMessage(message, document, webviewPanel.webview),
       undefined,
       this.context.subscriptions
     );
@@ -69,15 +80,13 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
     // Clean up when webview is disposed
     webviewPanel.onDidDispose(() => {
       changeDocumentSubscription.dispose();
+      changeThemeSubscription.dispose();
+      this.activeWebviews.delete(document.uri.toString());
     });
 
     // Handle theme changes
     const changeThemeSubscription = vscode.window.onDidChangeActiveColorTheme(() => {
       this.sendThemeUpdate(webviewPanel.webview);
-    });
-
-    webviewPanel.onDidDispose(() => {
-      changeThemeSubscription.dispose();
     });
   }
 
@@ -110,7 +119,8 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
    */
   private async handleWebviewMessage(
     message: WebviewMessage,
-    document: vscode.TextDocument
+    document: vscode.TextDocument,
+    webview: vscode.Webview
   ): Promise<void> {
     switch (message.type) {
       case 'edit':
@@ -121,6 +131,15 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
       case 'ready':
         // Webview is ready, send initial state
         Logger.info('Webview ready');
+        break;
+
+      case 'modeChanged':
+        // Track mode change from webview
+        const webviewData = this.activeWebviews.get(document.uri.toString());
+        if (webviewData && message.mode) {
+          webviewData.mode = message.mode;
+          Logger.info(`Mode changed to ${message.mode} for ${document.uri.fsPath}`);
+        }
         break;
 
       case 'log':
@@ -297,17 +316,43 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
   }
 
   /**
-   * Switch editor mode
+   * Switch editor mode for the active editor
    */
   public async switchMode(mode: EditorMode): Promise<void> {
     const activeEditor = vscode.window.activeTextEditor;
     if (!activeEditor) {
+      vscode.window.showWarningMessage('No active editor to switch mode');
       return;
     }
 
-    // Find the webview panel for this document
-    // Note: This is a simplified version. In production, we'd track panels.
-    vscode.window.showInformationMessage(`Switching to ${mode} mode`);
-    Logger.info(`Switching to ${mode} mode`);
+    // Find the webview for this document
+    const webviewData = this.activeWebviews.get(activeEditor.document.uri.toString());
+    if (!webviewData) {
+      vscode.window.showWarningMessage('Active editor is not a Kiro markdown editor');
+      return;
+    }
+
+    // Send mode switch message to webview
+    webviewData.panel.webview.postMessage({
+      type: 'switchMode',
+      mode: mode
+    });
+
+    // Update tracked mode
+    webviewData.mode = mode;
+    Logger.info(`Switched to ${mode} mode for ${activeEditor.document.uri.fsPath}`);
+  }
+
+  /**
+   * Get the current mode of the active editor
+   */
+  public getCurrentMode(): EditorMode | null {
+    const activeEditor = vscode.window.activeTextEditor;
+    if (!activeEditor) {
+      return null;
+    }
+
+    const webviewData = this.activeWebviews.get(activeEditor.document.uri.toString());
+    return webviewData?.mode || null;
   }
 }
