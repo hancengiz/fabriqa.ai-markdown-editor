@@ -50,8 +50,8 @@ Create a `.vscode/markdown-extension-config.json` file in your workspace:
 
 ### 2. Open Markdown Files
 
-- Click on any file in the **FABRIQA** sidebar to open it with the custom editor
-- Or right-click a `.md` file and select "Open with Fabriqa Editor"
+- Click on any file in the **fabriqa** sidebar to open it with the custom editor
+- Or right-click a `.md` file and select "Open with fabriqa Editor"
 
 ### 3. Switch Modes
 
@@ -142,14 +142,14 @@ The extension uses VS Code's Custom Editor API with a webview-based editor:
 
 ## Commands
 
-- `Fabriqa: Open with Fabriqa Editor` - Open markdown file with custom editor
-- `Fabriqa: Switch to Live Preview Mode` - Switch to live preview
-- `Fabriqa: Switch to Source Mode` - Switch to source mode
-- `Fabriqa: Switch to Reading Mode` - Switch to reading mode
-- `Fabriqa: Create New File` - Create new markdown file
-- `Fabriqa: Delete File` - Delete selected file
-- `Fabriqa: Rename File` - Rename selected file
-- `Fabriqa: Refresh Tree View` - Refresh sidebar
+- `fabriqa: Open with fabriqa Editor` - Open markdown file with custom editor
+- `fabriqa: Switch to Live Preview Mode` - Switch to live preview
+- `fabriqa: Switch to Source Mode` - Switch to source mode
+- `fabriqa: Switch to Reading Mode` - Switch to reading mode
+- `fabriqa: Create New File` - Create new markdown file
+- `fabriqa: Delete File` - Delete selected file
+- `fabriqa: Rename File` - Rename selected file
+- `fabriqa: Refresh Tree View` - Refresh sidebar
 
 ## License
 

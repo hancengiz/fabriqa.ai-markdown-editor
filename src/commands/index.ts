@@ -31,7 +31,7 @@ export function registerCommands(
           const selected = await vscode.window.showOpenDialog({
             canSelectMany: false,
             filters: { 'Markdown': ['md'] },
-            openLabel: 'Open with Fabriqa Editor'
+            openLabel: 'Open with fabriqa Editor'
           });
 
           if (!selected || selected.length === 0) {
@@ -43,9 +43,9 @@ export function registerCommands(
 
         // Open with custom editor
         await vscode.commands.executeCommand('vscode.openWith', uri, 'fabriqa.markdownEditor');
-        Logger.info(`Opened file with Fabriqa editor: ${uri.fsPath}`);
+        Logger.info(`Opened file with fabriqa editor: ${uri.fsPath}`);
       } catch (error) {
-        Logger.error('Failed to open file with Fabriqa editor', error);
+        Logger.error('Failed to open file with fabriqa editor', error);
         vscode.window.showErrorMessage(`Failed to open file: ${error}`);
       }
     })
@@ -94,7 +94,7 @@ export function registerCommands(
   context.subscriptions.push(
     vscode.commands.registerCommand('fabriqa.refreshTree', () => {
       treeProvider.refresh();
-      vscode.window.showInformationMessage('Refreshed Fabriqa tree view');
+      vscode.window.showInformationMessage('Refreshed fabriqa tree view');
     })
   );
 
@@ -331,13 +331,13 @@ export function registerCommands(
         { label: '', kind: vscode.QuickPickItemKind.Separator },
         {
           label: '$(gear) Open Settings',
-          description: 'Configure all Fabriqa settings',
+          description: 'Configure all fabriqa settings',
           action: 'open:settings'
         }
       ];
 
       const selected = await vscode.window.showQuickPick(items, {
-        placeHolder: 'Fabriqa Editor Settings'
+        placeHolder: 'fabriqa Editor Settings'
       });
 
       if (!selected || !selected.action) {

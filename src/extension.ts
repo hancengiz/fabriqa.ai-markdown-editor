@@ -11,7 +11,7 @@ let editorProvider: MarkdownEditorProvider | undefined;
 
 export function activate(context: vscode.ExtensionContext): void {
   console.log("[Extension] ========== ACTIVATION STARTED ==========");
-  Logger.info('Fabriqa Markdown Editor activating...');
+  Logger.info('fabriqa Markdown Editor activating...');
 
   // Initialize webview logger (only active in debug mode)
   WebviewLogger.initialize(context);
@@ -50,15 +50,15 @@ export function activate(context: vscode.ExtensionContext): void {
     setupFileWatchers(context, treeProvider, configManager);
 
     console.log("[Extension] ========== ACTIVATION COMPLETE ==========");
-    Logger.info('Fabriqa Markdown Editor activated successfully');
+    Logger.info('fabriqa Markdown Editor activated successfully');
   } catch (error) {
-    Logger.error('Failed to activate Fabriqa Markdown Editor', error);
-    vscode.window.showErrorMessage(`Failed to activate Fabriqa Markdown Editor: ${error}`);
+    Logger.error('Failed to activate fabriqa Markdown Editor', error);
+    vscode.window.showErrorMessage(`Failed to activate fabriqa Markdown Editor: ${error}`);
   }
 }
 
 export function deactivate(): void {
-  Logger.info('Fabriqa Markdown Editor deactivating...');
+  Logger.info('fabriqa Markdown Editor deactivating...');
   treeProvider = undefined;
   editorProvider = undefined;
 }

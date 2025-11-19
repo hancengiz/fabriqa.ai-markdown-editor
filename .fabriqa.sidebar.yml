@@ -1,5 +1,5 @@
-# Fabriqa Markdown Extension Configuration
-# Define which folders/files appear in the Fabriqa sidebar
+# fabriqa Markdown Extension Configuration
+# Define which folders/files appear in the fabriqa sidebar
 
 sections:
   # SPECS section - project specifications and documentation

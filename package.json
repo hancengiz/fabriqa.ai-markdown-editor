@@ -34,7 +34,7 @@
       "activitybar": [
         {
           "id": "fabriqa",
-          "title": "Fabriqa",
+          "title": "fabriqa",
           "icon": "resources/activity-bar-icon.svg"
         }
       ]
@@ -45,78 +45,78 @@
           "id": "fabriqa.markdownTree",
           "name": "Markdown Files",
           "icon": "resources/icon.svg",
-          "contextualTitle": "Fabriqa Markdown"
+          "contextualTitle": "fabriqa Markdown"
         }
       ]
     },
     "commands": [
       {
         "command": "fabriqa.openMarkdownEditor",
-        "title": "Open with Fabriqa Editor",
-        "category": "Fabriqa"
+        "title": "Open with fabriqa Editor",
+        "category": "fabriqa"
       },
       {
         "command": "fabriqa.switchToLivePreview",
         "title": "Switch to Live Preview Mode",
-        "category": "Fabriqa",
+        "category": "fabriqa",
         "icon": "$(eye)"
       },
       {
         "command": "fabriqa.switchToSource",
         "title": "Switch to Source Mode",
-        "category": "Fabriqa",
+        "category": "fabriqa",
         "icon": "$(code)"
       },
       {
         "command": "fabriqa.switchToReading",
         "title": "Switch to Reading Mode",
-        "category": "Fabriqa",
+        "category": "fabriqa",
         "icon": "$(book)"
       },
       {
         "command": "fabriqa.createFile",
         "title": "Create New File",
-        "category": "Fabriqa",
+        "category": "fabriqa",
         "icon": "$(new-file)"
       },
       {
         "command": "fabriqa.deleteFile",
         "title": "Delete File",
-        "category": "Fabriqa",
+        "category": "fabriqa",
         "icon": "$(trash)"
       },
       {
         "command": "fabriqa.renameFile",
         "title": "Rename File",
-        "category": "Fabriqa",
+        "category": "fabriqa",
         "icon": "$(edit)"
       },
       {
         "command": "fabriqa.refreshTree",
         "title": "Refresh Tree View",
-        "category": "Fabriqa",
+        "category": "fabriqa",
         "icon": "$(refresh)"
       },
       {
         "command": "fabriqa.collapseSection",
         "title": "Collapse Section",
-        "category": "Fabriqa"
+        "category": "fabriqa"
       },
       {
         "command": "fabriqa.expandSection",
         "title": "Expand Section",
-        "category": "Fabriqa"
+        "category": "fabriqa"
       },
       {
         "command": "fabriqa.showWebviewLogs",
         "title": "Show Webview Console Logs",
-        "category": "Fabriqa",
+        "category": "fabriqa",
         "icon": "$(output)"
       },
       {
         "command": "fabriqa.showEditorSettings",
         "title": "Editor Settings",
-        "category": "Fabriqa",
+        "category": "fabriqa",
         "icon": "resources/fabriqa-toolbar-icon.svg"
       }
     ],
@@ -178,7 +178,7 @@
               ]
             }
           ],
-          "description": "Configure which sections appear in the FABRIQA sidebar. Each section can have: id, title, collapsed, filePatterns (glob), and description",
+          "description": "Configure which sections appear in the fabriqa sidebar. Each section can have: id, title, collapsed, filePatterns (glob), and description",
           "items": {
             "type": "object",
             "properties": {
