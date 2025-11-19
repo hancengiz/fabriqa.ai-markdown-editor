@@ -1,6 +1,7 @@
 .vscode/**
 .vscode-test/**
 src/**
+dev/**
 .gitignore
 .yarnrc
 vsc-extension-quickstart.md
@@ -15,3 +16,5 @@ specs/**
 .git/**
 .github/**
 esbuild.js
+*.md
+!README.md

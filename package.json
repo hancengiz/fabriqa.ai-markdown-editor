@@ -168,26 +168,6 @@
         }
       ]
     },
-    "keybindings": [
-      {
-        "command": "fabriqa.switchToLivePreview",
-        "key": "ctrl+shift+p",
-        "mac": "cmd+shift+p",
-        "when": "activeCustomEditorId == fabriqa.markdownEditor"
-      },
-      {
-        "command": "fabriqa.switchToSource",
-        "key": "ctrl+shift+s",
-        "mac": "cmd+shift+s",
-        "when": "activeCustomEditorId == fabriqa.markdownEditor"
-      },
-      {
-        "command": "fabriqa.switchToReading",
-        "key": "ctrl+shift+r",
-        "mac": "cmd+shift+r",
-        "when": "activeCustomEditorId == fabriqa.markdownEditor"
-      }
-    ],
     "configuration": {
       "title": "Fabriqa.ai Markdown Editor",
       "properties": {

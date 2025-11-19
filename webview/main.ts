@@ -42,6 +42,28 @@ const basicExtensions = [
   highlightActiveLine(),
   highlightSelectionMatches(),
   keymap.of([
+    // Mode switching shortcuts (editor rendering modes)
+    {
+      key: 'Mod-Shift-p',
+      run: () => {
+        switchMode('livePreview');
+        return true;
+      }
+    },
+    {
+      key: 'Mod-Shift-s',
+      run: () => {
+        switchMode('source');
+        return true;
+      }
+    },
+    {
+      key: 'Mod-Shift-r',
+      run: () => {
+        switchMode('reading');
+        return true;
+      }
+    },
     // Markdown formatting shortcuts (Obsidian-style)
     { key: 'Mod-b', run: toggleBold },
     { key: 'Mod-i', run: toggleItalic },
