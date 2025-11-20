@@ -227,3 +227,30 @@ Implement VS Code's native find controller for the custom editor.
 - Reading Mode search is more complex due to rendered HTML
 - Consider using `mark.js` library for highlighting matches in Reading Mode
 - VS Code's native find controller API is documented but requires more research
+
+## Known Limitations
+
+### Global Search (Cmd+Shift+F) Selection Navigation
+**Issue**: When clicking search results from VS Code's global search (Cmd+Shift+F), the fabriqa editor opens the file but cannot automatically jump to the specific search result location.
+
+**Root Cause**: VS Code's Custom Editor API (`CustomTextEditorProvider`) does not provide any mechanism to receive selection/position information when opening files. The `resolveCustomTextEditor` method only receives the document and webview panel - no position or selection data is passed.
+
+**Investigation Conducted**:
+- Attempted to capture selection via `onDidChangeTextEditorSelection` events - does not fire for custom editors
+- Tried checking `vscode.window.visibleTextEditors` for selection state - custom editor replaces TextEditor immediately
+- Checked for URI fragments or query parameters - VS Code does not use them for custom editors
+- Researched other popular custom editors (Jupyter Notebook, Hex Editor) - none have this capability
+- This is a fundamental limitation of VS Code's Custom Editor API
+
+**Workaround for Users**:
+1. Click search result to open file in fabriqa editor
+2. Use in-document search (Cmd+F) to find the search term
+3. The in-document search includes history and starts from cursor position
+
+**Status**: ✅ **Documented in README** - Users are informed of this limitation and the workaround
+
+**Related**:
+- In-document search (Cmd+F) works perfectly ✅
+- Search from cursor position ✅
+- Search history ✅
+- Smart content reveal (Mermaid diagrams, etc.) ✅

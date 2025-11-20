@@ -110,12 +110,13 @@ The search behavior is designed to feel natural and efficient:
 
 This unified approach means both `Cmd+F` + Enter and `F3` do the exact same thing, giving you flexibility in your workflow.
 
-### Global Search Integration
+### Global Search (Cmd+Shift+F)
 When using VS Code's global search (`Cmd+Shift+F` / `Ctrl+Shift+F`):
 
 - Search results in markdown files automatically open with the fabriqa editor
-- The editor jumps directly to the found text and highlights it
-- All matches across your workspace are accessible through search results
+- **Note**: Due to VS Code's Custom Editor API limitations, the editor cannot automatically jump to the specific search result location
+- **Workaround**: After the file opens, use in-document search (`Cmd+F`) to find your search term
+- This is a known limitation of VS Code's Custom Editor API that affects all custom editors
 
 ### Smart Content Reveal
 Search intelligently reveals hidden content:
@@ -136,7 +137,7 @@ Search intelligently reveals hidden content:
 - `F3` - Find next
 - `Shift+F3` - Find previous
 - `Escape` - Clear search
-- `Cmd+Shift+F` / `Ctrl+Shift+F` - Global search (VS Code native, with fabriqa integration)
+- `Cmd+Shift+F` / `Ctrl+Shift+F` - Global search (VS Code native)
 
 ### Markdown Formatting (Cmd+Option on Mac, Ctrl+Alt on Windows/Linux)
 - `Cmd+Option+B` / `Ctrl+Alt+B` - Bold

@@ -25,9 +25,6 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
   private activeWebviews = new Map<string, { panel: vscode.WebviewPanel; mode: EditorMode; isUpdatingFromWebview: boolean }>();
   private currentActivePanel: vscode.WebviewPanel | null = null;
   private pendingReveal: { uri: string; line: number; character: number } | null = null;
-  private selectionChangeDisposable: vscode.Disposable | null = null;
-  // Store pending selection from search results (captures during brief TextEditor phase)
-  private pendingSelection: vscode.Selection | null = null;
 
   constructor(
     private readonly context: vscode.ExtensionContext,
@@ -512,8 +509,6 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
    * Dispose resources
    */
   public dispose(): void {
-    if (this.selectionChangeDisposable) {
-      this.selectionChangeDisposable.dispose();
-    }
+    // Nothing to dispose currently
   }
 }
