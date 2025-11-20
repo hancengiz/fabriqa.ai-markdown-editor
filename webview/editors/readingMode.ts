@@ -1448,7 +1448,7 @@ export const readingModePlugin = ViewPlugin.fromClass(
           // Render the diagram
           const { svg } = await mermaid.render(diagramId, mermaidCode);
 
-          // Create a container for the diagram - aligned to left
+          // Create a container for the diagram - fit content with max 75% width
           const container = document.createElement('div');
           container.className = 'mermaid-diagram-container';
           container.innerHTML = svg;
@@ -1460,36 +1460,10 @@ export const readingModePlugin = ViewPlugin.fromClass(
             background: var(--vscode-editor-background);
             margin: 16px 0 16px 0;
             overflow: auto;
-            width: 75%;
+            width: fit-content;
             max-width: 75%;
             display: block;
           `;
-
-          // Style the SVG for responsive rendering
-          const svgElement = container.querySelector('svg');
-          if (svgElement) {
-            // Get the original dimensions for viewBox
-            const width = svgElement.getAttribute('width');
-            const height = svgElement.getAttribute('height');
-
-            // Ensure viewBox is set for proper scaling
-            if (width && height && !svgElement.getAttribute('viewBox')) {
-              svgElement.setAttribute('viewBox', `0 0 ${width} ${height}`);
-            }
-
-            // Remove fixed width/height attributes to allow responsive scaling
-            svgElement.removeAttribute('width');
-            svgElement.removeAttribute('height');
-
-            // Apply responsive CSS - constrain to container width and max height
-            svgElement.style.width = '100%';
-            svgElement.style.maxWidth = '100%';
-            svgElement.style.height = 'auto';
-            svgElement.style.maxHeight = '600px';
-            svgElement.style.display = 'block';
-            svgElement.style.marginLeft = '0';
-            svgElement.style.marginRight = 'auto';
-          }
 
           // Replace the pre element with the rendered diagram
           preElement.replaceWith(container);

@@ -67,7 +67,14 @@ export class MermaidDiagramWidget extends WidgetType {
     // Initialize mermaid if not already done
     initMermaid();
 
-    // Create main container - use 75% width by default, aligned to left
+    // Parse size from HTML comment (works for all diagram types)
+    // Format: %% {"editorSize": {"width": 600, "height": 400}} %%
+    const sizeMatch = this.code.match(/%% \{"editorSize": \{"width": (\d+), "height": (\d+)\}\} %%/);
+    const customWidth = sizeMatch ? `${sizeMatch[1]}px` : '75%';
+    const customHeight = sizeMatch ? `${sizeMatch[2]}px` : 'auto';
+    const hasCustomSize = !!sizeMatch;
+
+    // Create main container - resizable, let Mermaid determine default size
     const container = document.createElement('div');
     container.className = 'mermaid-diagram-widget-container';
     container.style.cssText = `
@@ -79,10 +86,13 @@ export class MermaidDiagramWidget extends WidgetType {
       background: var(--vscode-editor-background);
       margin: 8px 0 8px 0;
       min-height: 100px;
-      width: 75%;
-      max-width: 75%;
+      width: ${customWidth};
+      height: ${customHeight};
+      min-width: 200px;
+      max-width: 100%;
       box-sizing: border-box;
-      overflow-x: auto;
+      overflow: auto;
+      resize: both;
     `;
 
     // Create button container
@@ -96,29 +106,6 @@ export class MermaidDiagramWidget extends WidgetType {
       opacity: 0;
       transition: opacity 0.2s;
       z-index: 10;
-    `;
-
-    // Create "Expand/Collapse" button
-    const expandButton = document.createElement('button');
-    expandButton.className = 'mermaid-expand-btn';
-    expandButton.innerHTML = `
-      <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor">
-        <path d="M1.5 1a.5.5 0 0 0-.5.5v4a.5.5 0 0 1-1 0v-4A1.5 1.5 0 0 1 1.5 0h4a.5.5 0 0 1 0 1h-4zM10 .5a.5.5 0 0 1 .5-.5h4A1.5 1.5 0 0 1 16 1.5v4a.5.5 0 0 1-1 0v-4a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 1-.5-.5zM.5 10a.5.5 0 0 1 .5.5v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 1 0 1h-4A1.5 1.5 0 0 1 0 14.5v-4a.5.5 0 0 1 .5-.5zm15 0a.5.5 0 0 1 .5.5v4a1.5 1.5 0 0 1-1.5 1.5h-4a.5.5 0 0 1 0-1h4a.5.5 0 0 0 .5-.5v-4a.5.5 0 0 1 .5-.5z"/>
-      </svg>
-    `;
-    expandButton.title = 'Expand to full width';
-    expandButton.style.cssText = `
-      background: var(--vscode-button-background);
-      color: var(--vscode-button-foreground);
-      border: none;
-      border-radius: 2px;
-      padding: 3px 5px;
-      font-size: 9px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: var(--vscode-font-family);
     `;
 
     // Create "Zoom" button (magnifier icon)
@@ -144,11 +131,59 @@ export class MermaidDiagramWidget extends WidgetType {
       font-family: var(--vscode-font-family);
     `;
 
-    buttonContainer.appendChild(expandButton);
-    buttonContainer.appendChild(zoomButton);
+    // Create "View Code" button (code icon)
+    const viewCodeButton = document.createElement('button');
+    viewCodeButton.className = 'mermaid-code-btn';
+    viewCodeButton.innerHTML = `
+      <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor">
+        <path d="M4.72 3.22a.75.75 0 011.06 1.06L2.06 8l3.72 3.72a.75.75 0 11-1.06 1.06L.47 8.53a.75.75 0 010-1.06l4.25-4.25zm6.56 0a.75.75 0 10-1.06 1.06L13.94 8l-3.72 3.72a.75.75 0 101.06 1.06l4.25-4.25a.75.75 0 000-1.06l-4.25-4.25z"/>
+      </svg>
+    `;
+    viewCodeButton.title = 'View code';
+    viewCodeButton.style.cssText = `
+      background: var(--vscode-button-background);
+      color: var(--vscode-button-foreground);
+      border: none;
+      border-radius: 2px;
+      padding: 3px 5px;
+      font-size: 9px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--vscode-font-family);
+    `;
 
-    // Track expanded state
-    let isExpanded = false;
+    // Create "Reset Size" button (only if custom size exists)
+    let resetButton: HTMLButtonElement | null = null;
+    if (hasCustomSize) {
+      resetButton = document.createElement('button');
+      resetButton.className = 'mermaid-reset-btn';
+      resetButton.innerHTML = `
+        <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
+          <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/>
+        </svg>
+      `;
+      resetButton.title = 'Reset to default size';
+      resetButton.style.cssText = `
+        background: var(--vscode-button-background);
+        color: var(--vscode-button-foreground);
+        border: none;
+        border-radius: 2px;
+        padding: 3px 5px;
+        font-size: 9px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--vscode-font-family);
+      `;
+      buttonContainer.appendChild(resetButton);
+    }
+
+    buttonContainer.appendChild(zoomButton);
+    buttonContainer.appendChild(viewCodeButton);
 
     // Show buttons on hover
     container.addEventListener('mouseenter', () => {
@@ -162,47 +197,76 @@ export class MermaidDiagramWidget extends WidgetType {
     });
 
     // Button hover effects
-    expandButton.addEventListener('mouseenter', () => {
-      expandButton.style.background = 'var(--vscode-button-hoverBackground)';
-    });
-    expandButton.addEventListener('mouseleave', () => {
-      expandButton.style.background = 'var(--vscode-button-background)';
-    });
+    if (resetButton) {
+      resetButton.addEventListener('mouseenter', () => {
+        resetButton!.style.background = 'var(--vscode-button-hoverBackground)';
+      });
+      resetButton.addEventListener('mouseleave', () => {
+        resetButton!.style.background = 'var(--vscode-button-background)';
+      });
+    }
     zoomButton.addEventListener('mouseenter', () => {
       zoomButton.style.background = 'var(--vscode-button-hoverBackground)';
     });
     zoomButton.addEventListener('mouseleave', () => {
       zoomButton.style.background = 'var(--vscode-button-background)';
     });
+    viewCodeButton.addEventListener('mouseenter', () => {
+      viewCodeButton.style.background = 'var(--vscode-button-hoverBackground)';
+    });
+    viewCodeButton.addEventListener('mouseleave', () => {
+      viewCodeButton.style.background = 'var(--vscode-button-background)';
+    });
 
-    // Handle "Expand/Collapse" button click
-    expandButton.addEventListener('click', (e) => {
+    // Handle "Reset Size" button click
+    if (resetButton) {
+      resetButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        // Remove editor size comment from the content
+        const newCode = this.code.replace(/%% \{"editorSize": \{"width": \d+, "height": \d+\}\} %%\n?/, '');
+
+        // Get the full block text including fence markers
+        const fullBlockText = this.view.state.doc.sliceString(this.from, this.to);
+
+        // Parse the block to extract opening fence, content, and closing fence
+        // Format: ```mermaid\n[content]\n```
+        const fenceMatch = fullBlockText.match(/^(```\w+\n)([\s\S]*?)(\n```)$/);
+
+        if (fenceMatch) {
+          const [, openingFence, , closingFence] = fenceMatch;
+          const newBlockText = openingFence + newCode + closingFence;
+
+          // Update the document with preserved fences
+          this.view.dispatch({
+            changes: {
+              from: this.from,
+              to: this.to,
+              insert: newBlockText
+            }
+          });
+        }
+
+        // Reset container to default size
+        container.style.width = '75%';
+        container.style.height = 'auto';
+      });
+    }
+
+    // Handle "View Code" button click
+    viewCodeButton.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
 
-      isExpanded = !isExpanded;
+      // Move cursor to the code block position to trigger showing raw code
+      this.view.dispatch({
+        selection: { anchor: this.from + 1 },
+        scrollIntoView: true
+      });
 
-      if (isExpanded) {
-        // Expand to 100% width
-        container.style.width = '100%';
-        container.style.maxWidth = '100%';
-        expandButton.innerHTML = `
-          <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor">
-            <path d="M5.5 0a.5.5 0 0 1 .5.5v4A1.5 1.5 0 0 1 4.5 6h-4a.5.5 0 0 1 0-1h4a.5.5 0 0 0 .5-.5v-4a.5.5 0 0 1 .5-.5zm5 0a.5.5 0 0 1 .5.5v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 1 0 1h-4A1.5 1.5 0 0 1 10 4.5v-4a.5.5 0 0 1 .5-.5zM0 10.5a.5.5 0 0 1 .5-.5h4A1.5 1.5 0 0 1 6 11.5v4a.5.5 0 0 1-1 0v-4a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 1-.5-.5zm10 1a1.5 1.5 0 0 1 1.5-1.5h4a.5.5 0 0 1 0 1h-4a.5.5 0 0 0-.5.5v4a.5.5 0 0 1-1 0v-4z"/>
-          </svg>
-        `;
-        expandButton.title = 'Collapse to 75% width';
-      } else {
-        // Collapse to 75% width
-        container.style.width = '75%';
-        container.style.maxWidth = '75%';
-        expandButton.innerHTML = `
-          <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor">
-            <path d="M1.5 1a.5.5 0 0 0-.5.5v4a.5.5 0 0 1-1 0v-4A1.5 1.5 0 0 1 1.5 0h4a.5.5 0 0 1 0 1h-4zM10 .5a.5.5 0 0 1 .5-.5h4A1.5 1.5 0 0 1 16 1.5v4a.5.5 0 0 1-1 0v-4a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 1-.5-.5zM.5 10a.5.5 0 0 1 .5.5v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 1 0 1h-4A1.5 1.5 0 0 1 0 14.5v-4a.5.5 0 0 1 .5-.5zm15 0a.5.5 0 0 1 .5.5v4a1.5 1.5 0 0 1-1.5 1.5h-4a.5.5 0 0 1 0-1h4a.5.5 0 0 0 .5-.5v-4a.5.5 0 0 1 .5-.5z"/>
-          </svg>
-        `;
-        expandButton.title = 'Expand to full width';
-      }
+      // Focus the editor
+      this.view.focus();
     });
 
     container.appendChild(buttonContainer);
@@ -279,6 +343,63 @@ export class MermaidDiagramWidget extends WidgetType {
     // Render the mermaid diagram asynchronously
     this.renderDiagram(diagramContainer, container);
 
+    // Add ResizeObserver to save custom size after user resizes
+    let resizeTimeout: number | null = null;
+    let initialRender = true; // Skip first observation to avoid saving 0x0
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      // Skip first observation (initial render)
+      if (initialRender) {
+        initialRender = false;
+        return;
+      }
+
+      // Debounce: wait 1 second after user stops resizing
+      if (resizeTimeout !== null) {
+        clearTimeout(resizeTimeout);
+      }
+
+      resizeTimeout = window.setTimeout(() => {
+        const entry = entries[0];
+        if (!entry) return;
+
+        const width = Math.round(entry.contentRect.width);
+        const height = Math.round(entry.contentRect.height);
+
+        // Only save if dimensions are reasonable (not 0x0)
+        if (width > 0 && height > 0) {
+          // Add or update editor size comment
+          const sizeComment = `%% {"editorSize": {"width": ${width}, "height": ${height}}} %%\n`;
+          const newCode = sizeComment + this.code.replace(/%% \{"editorSize": \{"width": \d+, "height": \d+\}\} %%\n?/, '');
+
+          // Get the full block text including fence markers
+          const fullBlockText = this.view.state.doc.sliceString(this.from, this.to);
+
+          // Parse the block to extract opening fence, content, and closing fence
+          // Format: ```mermaid\n[content]\n```
+          const fenceMatch = fullBlockText.match(/^(```\w+\n)([\s\S]*?)(\n```)$/);
+
+          if (fenceMatch) {
+            const [, openingFence, , closingFence] = fenceMatch;
+            const newBlockText = openingFence + newCode + closingFence;
+
+            // Update the document with preserved fences
+            this.view.dispatch({
+              changes: {
+                from: this.from,
+                to: this.to,
+                insert: newBlockText
+              }
+            });
+          }
+        }
+
+        resizeTimeout = null;
+      }, 1000); // 1 second delay
+    });
+
+    resizeObserver.observe(container);
+
     return container;
   }
 
@@ -297,34 +418,8 @@ export class MermaidDiagramWidget extends WidgetType {
       // Render the diagram
       const { svg } = await mermaid.render(this.diagramId, this.code);
 
-      // Replace loading with SVG
+      // Replace loading with SVG - render as-is
       diagramContainer.innerHTML = svg;
-
-      // Style the SVG for responsive rendering
-      const svgElement = diagramContainer.querySelector('svg');
-      if (svgElement) {
-        // Get the original dimensions for viewBox
-        const width = svgElement.getAttribute('width');
-        const height = svgElement.getAttribute('height');
-
-        // Ensure viewBox is set for proper scaling
-        if (width && height && !svgElement.getAttribute('viewBox')) {
-          svgElement.setAttribute('viewBox', `0 0 ${width} ${height}`);
-        }
-
-        // Remove fixed width/height attributes to allow responsive scaling
-        svgElement.removeAttribute('width');
-        svgElement.removeAttribute('height');
-
-        // Apply responsive CSS - constrain to container width and max height
-        svgElement.style.width = '100%';
-        svgElement.style.maxWidth = '100%';
-        svgElement.style.height = 'auto';
-        svgElement.style.maxHeight = '600px';
-        svgElement.style.display = 'block';
-        svgElement.style.marginLeft = '0';
-        svgElement.style.marginRight = 'auto';
-      }
     } catch (error) {
       // Show error
       console.error('Failed to render mermaid diagram:', error);
