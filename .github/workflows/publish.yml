@@ -99,6 +99,25 @@ jobs:
         if: steps.version-changed.outputs.changed == 'true'
         run: npx vsce package
 
+      - name: Verify publisher and token
+        if: steps.version-changed.outputs.changed == 'true'
+        run: |
+          echo "Checking publisher configuration..."
+          PUBLISHER=$(node -p "require('./package.json').publisher")
+          echo "Publisher ID: $PUBLISHER"
+
+          if [ -z "${{ secrets.VSCE_PAT }}" ]; then
+            echo "ERROR: VSCE_PAT secret is not set!"
+            exit 1
+          else
+            echo "VSCE_PAT secret is configured (length: ${#VSCE_PAT})"
+          fi
+
+          # Try to show publisher info (will fail if publisher doesn't exist)
+          npx vsce show "$PUBLISHER" || echo "Publisher '$PUBLISHER' may not exist yet on marketplace"
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+
       - name: Commit version bump
         if: steps.version-changed.outputs.changed == 'true'
         run: |
