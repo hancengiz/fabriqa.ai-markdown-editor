@@ -60,43 +60,46 @@ Tasks are split into separate files for better maintainability and navigation:
    - Deployment preparation
    - CI/CD setup
 
-### Feature-Specific Tasks
+### Feature-Specific Tasks (Completed)
 
-7. **[Mermaid Diagram Support](./mermaid-diagram-support.md)**
+5. **[Code Block Styling Improvements](./05-code-block-styling-improvements.md)** ✅
+   - Reading Mode code block backgrounds
+   - Table alternating row colors
+   - Theme-aware styling
+   - Syntax highlighting considerations
+
+6. **[Live Preview Decoration Issue](./06-live-preview-decoration-issue.md)** ✅ (Investigation/Bug Report)
+   - Analysis of decoration conflicts
+   - Root cause investigation
+   - Alternative approaches
+   - Recommended solutions
+
+7. **[Mermaid Diagram Support](./07-mermaid-diagram-support.md)** ✅
    - Reading mode rendering
    - Interactive Live Preview toggle
    - View Code button
    - Error handling
 
-8. **[Interactive Mermaid Live Preview](./interactive-mermaid-live-preview.md)** (Detailed Spec)
+8. **[Interactive Mermaid Live Preview](./08-interactive-mermaid-live-preview.md)** ✅ (Detailed Spec)
    - Comprehensive implementation guide
    - Widget-based rendering
    - Toggle functionality
    - Testing checklist
 
-9. **[Standard Editor Selection Commands](./standard-editor-selection-commands.md)**
+9. **[Standard Editor Selection Commands](./09-standard-editor-selection-commands.md)** ✅
    - VS Code-style selection shortcuts
    - Line, word, and character selection
    - Multiple cursors support
    - CodeMirror command mapping
 
-10. **[Native VS Code Search Support](./native-vscode-search-support.md)**
+10. **[Native VS Code Search Support](./10-native-vscode-search-support.md)** ✅
     - Cmd+F / Ctrl+F search integration
     - Find and replace functionality
     - Mode-specific search behavior
     - CodeMirror search implementation
-
-11. **[Code Block Styling Improvements](./code-block-styling-improvements.md)**
-    - Reading Mode code block backgrounds
-    - Table alternating row colors
-    - Theme-aware styling
-    - Syntax highlighting considerations
-
-12. **[Live Preview Decoration Issue](./live-preview-decoration-issue.md)** (Investigation/Bug Report)
-    - Analysis of decoration conflicts
-    - Root cause investigation
-    - Alternative approaches
-    - Recommended solutions
+    - Global search (Cmd+Shift+F) integration
+    - Search from cursor position
+    - Search history
 
 ---
 
