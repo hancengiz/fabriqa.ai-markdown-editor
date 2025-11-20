@@ -44,30 +44,30 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
    * Handle text editor selection changes to capture search result positions
    */
   private handleSelectionChange(event: vscode.TextEditorSelectionChangeEvent): void {
-    // Only interested in selections from text editors (not our custom editors)
-    if (event.kind === vscode.TextEditorSelectionChangeKind.Command) {
-      const uri = event.textEditor.document.uri;
-      const selection = event.selections[0];
+    const uri = event.textEditor.document.uri;
+    const selection = event.selections[0];
 
-      // Check if there's an active webview for this URI
-      if (this.activeWebviews.has(uri.toString()) && !selection.isEmpty) {
-        const line = selection.start.line + 1; // Convert to 1-indexed
-        const character = selection.start.character;
+    Logger.info(`Selection change event: ${uri.fsPath}, kind: ${event.kind}, empty: ${selection.isEmpty}`);
 
-        Logger.info(`Selection change detected for ${uri.fsPath}: line ${line}, char ${character}`);
+    // Check if there's an active webview for this URI
+    if (this.activeWebviews.has(uri.toString()) && !selection.isEmpty) {
+      const line = selection.start.line + 1; // Convert to 1-indexed
+      const character = selection.start.character;
 
-        // Set pending reveal
-        this.setPendingReveal(uri, line, character);
+      Logger.info(`Selection detected for custom editor ${uri.fsPath}: line ${line}, char ${character}`);
 
-        // Send reveal message if webview is already ready
-        const webviewData = this.activeWebviews.get(uri.toString());
-        if (webviewData) {
-          webviewData.panel.webview.postMessage({
-            type: 'revealPosition',
-            line: line,
-            character: character
-          });
-        }
+      // Set pending reveal
+      this.setPendingReveal(uri, line, character);
+
+      // Send reveal message if webview is already ready
+      const webviewData = this.activeWebviews.get(uri.toString());
+      if (webviewData) {
+        Logger.info(`Sending revealPosition message to webview`);
+        webviewData.panel.webview.postMessage({
+          type: 'revealPosition',
+          line: line,
+          character: character
+        });
       }
     }
   }
@@ -78,6 +78,28 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
     _token: vscode.CancellationToken
   ): Promise<void> {
     Logger.info(`Opening custom editor for ${document.uri.fsPath}`);
+
+    // Check if there's already a text editor with a selection for this document
+    // This happens when opening from search results - VS Code briefly opens it as a text editor first
+    const updateSelection = () => {
+      const editor = vscode.window.visibleTextEditors.find(
+        e => e.document.uri.toString() === document.uri.toString()
+      );
+
+      if (editor && !editor.selection.isEmpty) {
+        const sel = editor.selection;
+        const line = sel.start.line + 1; // Convert to 1-indexed
+        const character = sel.start.character;
+
+        Logger.info(`Found existing selection for ${document.uri.fsPath}: line ${line}, char ${character}`);
+
+        // Set pending reveal for when webview becomes ready
+        this.setPendingReveal(document.uri, line, character);
+      }
+    };
+
+    // Check immediately
+    updateSelection();
 
     // Configure webview
     webviewPanel.webview.options = {
