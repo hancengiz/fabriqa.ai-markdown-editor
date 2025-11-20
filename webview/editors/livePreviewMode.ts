@@ -382,6 +382,90 @@ export const livePreviewPlugin = ViewPlugin.fromClass(
       };
 
       switch (type.name) {
+        case 'ATXHeading1':
+          // Style h1 headings
+          addDecoration(
+            Decoration.mark({
+              class: 'cm-heading-1',
+              attributes: {
+                style: 'font-size: 2em; font-weight: 600; line-height: 1.25;'
+              }
+            }),
+            from,
+            to
+          );
+          break;
+
+        case 'ATXHeading2':
+          // Style h2 headings
+          addDecoration(
+            Decoration.mark({
+              class: 'cm-heading-2',
+              attributes: {
+                style: 'font-size: 1.5em; font-weight: 600; line-height: 1.25;'
+              }
+            }),
+            from,
+            to
+          );
+          break;
+
+        case 'ATXHeading3':
+          // Style h3 headings
+          addDecoration(
+            Decoration.mark({
+              class: 'cm-heading-3',
+              attributes: {
+                style: 'font-size: 1.25em; font-weight: 600; line-height: 1.25;'
+              }
+            }),
+            from,
+            to
+          );
+          break;
+
+        case 'ATXHeading4':
+          // Style h4 headings
+          addDecoration(
+            Decoration.mark({
+              class: 'cm-heading-4',
+              attributes: {
+                style: 'font-size: 1em; font-weight: 600; line-height: 1.25;'
+              }
+            }),
+            from,
+            to
+          );
+          break;
+
+        case 'ATXHeading5':
+          // Style h5 headings
+          addDecoration(
+            Decoration.mark({
+              class: 'cm-heading-5',
+              attributes: {
+                style: 'font-size: 0.875em; font-weight: 600; line-height: 1.25;'
+              }
+            }),
+            from,
+            to
+          );
+          break;
+
+        case 'ATXHeading6':
+          // Style h6 headings
+          addDecoration(
+            Decoration.mark({
+              class: 'cm-heading-6',
+              attributes: {
+                style: 'font-size: 0.85em; font-weight: 600; line-height: 1.25;'
+              }
+            }),
+            from,
+            to
+          );
+          break;
+
         case 'HeaderMark':
           // Hide header marks (# ## ### etc.)
           if (nodeText.match(/^#+\s?$/)) {
