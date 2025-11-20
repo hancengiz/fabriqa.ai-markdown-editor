@@ -5,7 +5,7 @@ import { syntaxHighlighting, defaultHighlightStyle } from '@codemirror/language'
 import { keymap, highlightSpecialChars, drawSelection, highlightActiveLine, dropCursor, rectangularSelection, crosshairCursor, lineNumbers, highlightActiveLineGutter } from '@codemirror/view';
 import { StyleModule } from 'style-mod';
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
-import { SearchQuery, setSearchQuery, findNext, findPrevious, highlightSelectionMatches } from '@codemirror/search';
+import { SearchQuery, setSearchQuery, highlightSelectionMatches, searchStateField } from '@codemirror/search';
 import { autocompletion, completionKeymap, closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete';
 import { foldGutter, indentOnInput, syntaxHighlighting as syntaxHighlightingFacet, bracketMatching } from '@codemirror/language';
 import { lintKeymap } from '@codemirror/lint';
@@ -519,6 +519,7 @@ if (document.readyState === 'loading') {
 
 /**
  * Find handlers for VS Code native find integration
+ * Implements search without opening CodeMirror's search panel
  */
 function handleFind(query: string, options?: { caseSensitive?: boolean; wholeWord?: boolean; regexp?: boolean }): void {
   if (!editorView) return;
@@ -531,14 +532,26 @@ function handleFind(query: string, options?: { caseSensitive?: boolean; wholeWor
       regexp: options?.regexp
     });
 
+    // Set the search query (this enables highlighting)
     editorView.dispatch({
       effects: setSearchQuery.of(searchQuery)
     });
 
-    // Automatically jump to first match and select it
-    findNext(editorView);
+    // Find first match manually without opening search panel
+    const cursor = searchQuery.getCursor(editorView.state.doc);
+    const firstMatch = cursor.next();
 
-    log(`Find: "${query}" (${JSON.stringify(options)})`);
+    if (firstMatch.done === false) {
+      // Jump to first match and select it
+      editorView.dispatch({
+        selection: { anchor: firstMatch.value.from, head: firstMatch.value.to },
+        scrollIntoView: true
+      });
+      editorView.focus();
+      log(`Find: "${query}" - found at position ${firstMatch.value.from}`);
+    } else {
+      log(`Find: "${query}" - no matches found`);
+    }
   } catch (error) {
     logError('Find failed', error);
   }
@@ -548,8 +561,38 @@ function handleFindNext(): void {
   if (!editorView) return;
 
   try {
-    findNext(editorView);
-    log('Find next');
+    // Get current search query from editor state
+    const state = editorView.state;
+    const searchState = state.field(searchStateField, false);
+
+    if (!searchState || !searchState.query) {
+      log('Find next: no active search');
+      return;
+    }
+
+    const query = searchState.query;
+    const currentPos = state.selection.main.head;
+
+    // Find next match after current position
+    const cursor = query.getCursor(state.doc, currentPos);
+    let nextMatch = cursor.next();
+
+    // If no match after cursor, wrap around to beginning
+    if (nextMatch.done) {
+      const wrappedCursor = query.getCursor(state.doc, 0);
+      nextMatch = wrappedCursor.next();
+    }
+
+    if (nextMatch.done === false) {
+      editorView.dispatch({
+        selection: { anchor: nextMatch.value.from, head: nextMatch.value.to },
+        scrollIntoView: true
+      });
+      editorView.focus();
+      log(`Find next: found at position ${nextMatch.value.from}`);
+    } else {
+      log('Find next: no more matches');
+    }
   } catch (error) {
     logError('Find next failed', error);
   }
@@ -559,8 +602,46 @@ function handleFindPrevious(): void {
   if (!editorView) return;
 
   try {
-    findPrevious(editorView);
-    log('Find previous');
+    // Get current search query from editor state
+    const state = editorView.state;
+    const searchState = state.field(searchStateField, false);
+
+    if (!searchState || !searchState.query) {
+      log('Find previous: no active search');
+      return;
+    }
+
+    const query = searchState.query;
+    const currentPos = state.selection.main.from;
+
+    // Find all matches before current position
+    const cursor = query.getCursor(state.doc, 0);
+    let lastMatch = null;
+    let match = cursor.next();
+
+    while (!match.done && match.value.from < currentPos) {
+      lastMatch = match.value;
+      match = cursor.next();
+    }
+
+    // If no match before cursor, wrap around to end
+    if (!lastMatch) {
+      while (!match.done) {
+        lastMatch = match.value;
+        match = cursor.next();
+      }
+    }
+
+    if (lastMatch) {
+      editorView.dispatch({
+        selection: { anchor: lastMatch.from, head: lastMatch.to },
+        scrollIntoView: true
+      });
+      editorView.focus();
+      log(`Find previous: found at position ${lastMatch.from}`);
+    } else {
+      log('Find previous: no matches');
+    }
   } catch (error) {
     logError('Find previous failed', error);
   }
@@ -573,8 +654,7 @@ function handleReplace(replacement: string): void {
   }
 
   try {
-    // CodeMirror doesn't have a built-in replace single function
-    // We need to implement it manually
+    // Replace current selection and move to next match
     const state = editorView.state;
     const selection = state.selection.main;
 
@@ -584,8 +664,8 @@ function handleReplace(replacement: string): void {
         selection: { anchor: selection.from + replacement.length }
       });
 
-      // Move to next match
-      findNext(editorView);
+      // Move to next match using our custom function
+      handleFindNext();
       log(`Replaced with: "${replacement}"`);
     }
   } catch (error) {
