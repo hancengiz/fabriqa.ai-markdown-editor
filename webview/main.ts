@@ -12,6 +12,7 @@ import { lintKeymap } from '@codemirror/lint';
 import { livePreviewPlugin } from './editors/livePreviewMode';
 import { readingModePlugin } from './editors/readingMode';
 import { markdownHidingStyles } from './lib/markdown-live-preview';
+import { getCurrentTheme } from './themes';
 import {
   toggleBold,
   toggleItalic,
@@ -273,47 +274,49 @@ function getModeExtensions(mode: EditorMode): any[] {
 }
 
 /**
- * Get theme extensions (always light theme)
+ * Get theme extensions (uses centralized theme system)
  */
 function getThemeExtensions(): any[] {
+  const theme = getCurrentTheme();
+
   return [
     syntaxHighlighting(defaultHighlightStyle),
     // Use baseTheme for native browser selection only
     EditorView.baseTheme({
       '.cm-content ::selection': {
-        backgroundColor: '#add6ff !important'
+        backgroundColor: `${theme.editor.selection} !important`
       },
       '.cm-content::selection': {
-        backgroundColor: '#add6ff !important'
+        backgroundColor: `${theme.editor.selection} !important`
       },
       '.cm-line ::selection': {
-        backgroundColor: '#add6ff !important'
+        backgroundColor: `${theme.editor.selection} !important`
       }
     }),
     EditorView.theme({
       '&': {
-        color: '#000000',
-        backgroundColor: '#ffffff'
+        color: theme.editor.foreground,
+        backgroundColor: theme.editor.background
       },
       '.cm-content': {
-        caretColor: '#000000'
+        caretColor: theme.editor.cursor
       },
       '.cm-cursor, .cm-dropCursor': {
-        borderLeftColor: '#000000',
+        borderLeftColor: theme.editor.cursor,
         borderLeftWidth: '2px'
       },
       // Active line
       '.cm-activeLine': {
-        backgroundColor: '#f5f5f5'
+        backgroundColor: theme.editor.activeLine
       },
       // Line numbers
       '.cm-gutters': {
-        backgroundColor: '#ffffff',
-        color: '#999999',
+        backgroundColor: theme.editor.background,
+        color: theme.editor.lineNumber,
         border: 'none'
       },
       '.cm-activeLineGutter': {
-        backgroundColor: '#f5f5f5'
+        backgroundColor: theme.editor.activeLine
       },
       // Line wrapping
       '.cm-line': {
@@ -322,12 +325,16 @@ function getThemeExtensions(): any[] {
       // Search match highlighting (for VS Code native find)
       '.cm-searchMatch': {
         backgroundColor: '#ffff00',
-        outline: '1px solid #d4d4d4',
+        outline: `1px solid ${theme.borderColor.muted}`,
         borderRadius: '1px'
       },
       '.cm-searchMatch-selected': {
-        backgroundColor: '#add6ff',
-        outline: '1px solid #007acc'
+        backgroundColor: theme.editor.selection,
+        outline: `1px solid ${theme.borderColor.accent}`
+      },
+      // Code block background (for fenced code blocks in source mode)
+      '.cm-line:has(.cm-codeMark)': {
+        backgroundColor: theme.code.background
       }
     })
   ];

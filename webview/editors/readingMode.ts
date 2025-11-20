@@ -2,6 +2,7 @@ import { ViewPlugin, EditorView } from '@codemirror/view';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import mermaid from 'mermaid';
+import { getCurrentTheme } from '../themes';
 
 /**
  * Reading Mode Plugin
@@ -68,6 +69,7 @@ export const readingModePlugin = ViewPlugin.fromClass(
 
     renderHTML(view: EditorView) {
       const markdown = view.state.doc.toString();
+      const theme = getCurrentTheme();
 
       try {
         // Convert markdown to HTML
@@ -442,6 +444,8 @@ export const readingModePlugin = ViewPlugin.fromClass(
   margin-bottom: var(--base-size-16);
   font-weight: var(--base-text-weight-semibold, 600);
   line-height: 1.25;
+  text-decoration: none;
+  border-bottom: none;
 }
 
 .reading-mode-content h2 {
@@ -477,9 +481,13 @@ export const readingModePlugin = ViewPlugin.fromClass(
 
 .reading-mode-content blockquote {
   margin: 0;
-  padding: 0 1em;
-  color: var(--fgColor-muted);
-  border-left: .25em solid var(--borderColor-default);
+  padding: 0.5em 1em;
+  color: ${theme.blockquote.text};
+  background-color: ${theme.blockquote.background};
+  border-left: .25em solid ${theme.blockquote.border};
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .reading-mode-content ul,
@@ -863,7 +871,7 @@ export const readingModePlugin = ViewPlugin.fromClass(
   margin: 0;
   font-size: 85%;
   white-space: break-spaces;
-  background-color: var(--bgColor-neutral-muted);
+  background-color: ${theme.code.inlineBackground};
   border-radius: 6px;
 }
 
@@ -908,8 +916,8 @@ export const readingModePlugin = ViewPlugin.fromClass(
   overflow: auto;
   font-size: 85%;
   line-height: 1.45;
-  color: var(--fgColor-default);
-  background-color: var(--bgColor-neutral-muted);
+  color: ${theme.code.text};
+  background-color: ${theme.code.background};
   border-radius: 6px;
 }
 
@@ -1182,16 +1190,16 @@ export const readingModePlugin = ViewPlugin.fromClass(
   -webkit-appearance: none;
   width: 16px;
   height: 16px;
-  border: 1.5px solid #d0d0d0;
+  border: 1.5px solid ${theme.checkbox.border};
   border-radius: 3px;
-  background: #ffffff;
+  background: ${theme.checkbox.background};
   cursor: pointer;
   position: relative;
 }
 
 .reading-mode-content .task-list-item-checkbox:checked {
-  background-color: #6c63ff;
-  border-color: #6c63ff;
+  background-color: ${theme.checkbox.checkedBackground};
+  border-color: ${theme.checkbox.checkedBorder};
 }
 
 .reading-mode-content .task-list-item-checkbox:checked::after {

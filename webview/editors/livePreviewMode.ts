@@ -3,6 +3,7 @@ import { syntaxTree } from '@codemirror/language';
 import { Range } from '@codemirror/state';
 import { SyntaxNode } from '@lezer/common';
 import { MermaidDiagramWidget } from '../lib/mermaid-widget';
+import { getCurrentTheme } from '../themes';
 
 // Decoration for hiding markdown syntax markers
 // Uses Decoration.mark() with CSS class instead of Decoration.replace()
@@ -19,12 +20,13 @@ class LinkWidget extends WidgetType {
   }
 
   toDOM() {
+    const theme = getCurrentTheme();
     const span = document.createElement('span');
     span.textContent = this.text;
     span.className = 'cm-link-preview';
     span.title = this.url;
     span.style.cssText = `
-      color: #006ab1;
+      color: ${theme.link.default};
       text-decoration: underline;
       cursor: pointer;
     `;
@@ -75,6 +77,7 @@ class CheckboxWidget extends WidgetType {
   }
 
   toDOM() {
+    const theme = getCurrentTheme();
     const wrapper = document.createElement('span');
     wrapper.className = 'cm-task-checkbox-wrapper';
     wrapper.style.cssText = `
@@ -89,25 +92,25 @@ class CheckboxWidget extends WidgetType {
     checkbox.checked = this.checked;
     checkbox.className = 'cm-task-checkbox';
 
-    // Obsidian-style checkbox - light gray border unchecked, purple when checked
+    // Obsidian-style checkbox using theme colors
     checkbox.style.cssText = `
       appearance: none;
       -webkit-appearance: none;
       width: 16px;
       height: 16px;
-      border: 1.5px solid #d0d0d0;
+      border: 1.5px solid ${theme.checkbox.border};
       border-radius: 3px;
-      background: #ffffff;
+      background: ${theme.checkbox.background};
       cursor: pointer;
       pointer-events: auto;
       vertical-align: middle;
       position: relative;
     `;
 
-    // Add checked state styling - Obsidian purple
+    // Add checked state styling
     if (this.checked) {
-      checkbox.style.backgroundColor = '#6c63ff';
-      checkbox.style.borderColor = '#6c63ff';
+      checkbox.style.backgroundColor = theme.checkbox.checkedBackground;
+      checkbox.style.borderColor = theme.checkbox.checkedBorder;
 
       // Create checkmark SVG
       const checkmark = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -123,7 +126,7 @@ class CheckboxWidget extends WidgetType {
 
       const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
       path.setAttribute('fill', 'none');
-      path.setAttribute('stroke', '#ffffff');
+      path.setAttribute('stroke', theme.checkbox.checkmark);
       path.setAttribute('stroke-width', '2.5');
       path.setAttribute('stroke-linecap', 'round');
       path.setAttribute('stroke-linejoin', 'round');
@@ -371,6 +374,7 @@ export const livePreviewPlugin = ViewPlugin.fromClass(
     processNode(node: SyntaxNode, view: EditorView, decorations: Range<Decoration>[], decoratedRanges: Set<string>): void {
       const { from, to, type } = node;
       const nodeText = view.state.doc.sliceString(from, to);
+      const theme = getCurrentTheme();
 
       // Helper function to add decoration only if range not already decorated
       const addDecoration = (decoration: Decoration, from: number, to: number) => {
@@ -497,7 +501,7 @@ export const livePreviewPlugin = ViewPlugin.fromClass(
               class: 'cm-inline-code-preview',
               attributes: {
                 style: `
-                  background-color: #f3f3f3;
+                  background-color: ${theme.code.inlineBackground};
                   padding: 2px 4px;
                   border-radius: 3px;
                   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
@@ -530,8 +534,28 @@ export const livePreviewPlugin = ViewPlugin.fromClass(
               class: 'cm-quote-mark',
               attributes: {
                 style: `
-                  color: #717171;
+                  color: ${theme.blockquote.text};
                   opacity: 0.6;
+                `
+              }
+            }),
+            from,
+            to
+          );
+          break;
+
+        case 'Blockquote':
+          // Add light gray background to blockquotes
+          addDecoration(
+            Decoration.mark({
+              class: 'cm-blockquote',
+              attributes: {
+                style: `
+                  background-color: ${theme.blockquote.background};
+                  color: ${theme.blockquote.text};
+                  padding: 2px 0;
+                  border-left: 4px solid ${theme.blockquote.border};
+                  padding-left: 1em;
                 `
               }
             }),
@@ -547,7 +571,7 @@ export const livePreviewPlugin = ViewPlugin.fromClass(
               class: 'cm-list-mark',
               attributes: {
                 style: `
-                  color: #0098ff;
+                  color: ${theme.fgColor.accent};
                   font-weight: bold;
                 `
               }
@@ -583,6 +607,24 @@ export const livePreviewPlugin = ViewPlugin.fromClass(
             );
             decoratedRanges.add(rangeKey);
           }
+          break;
+
+        case 'CodeBlock':
+          // Add light gray background to code blocks
+          addDecoration(
+            Decoration.mark({
+              class: 'cm-code-block',
+              attributes: {
+                style: `
+                  background-color: ${theme.code.background};
+                  padding: 4px 0;
+                  display: block;
+                `
+              }
+            }),
+            from,
+            to
+          );
           break;
 
         case 'FencedCode':
