@@ -31,7 +31,7 @@
   "bugs": {
     "url": "https://github.com/hancengiz/fabriqa.ai.markdown.editor/issues"
   },
-  "homepage": "https://github.com/hancengiz/fabriqa.ai.markdown.editor#readme",
+  "homepage": "https://fabriqa.ai",
   "license": "MIT",
   "activationEvents": [
     "onStartupFinished",

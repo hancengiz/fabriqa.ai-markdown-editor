@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Fabriqa Editor - Web Simulator (Development Only)</title>
+  <title>fabriqa.ai markdown editor - Web Simulator (Development Only)</title>
   <style>
     * {
       margin: 0;
@@ -19,80 +19,293 @@
     }
 
     #controls {
-      width: 300px;
-      background: #1e1e1e;
-      color: #cccccc;
-      padding: 20px;
-      overflow-y: auto;
-      border-right: 1px solid #454545;
+      width: 250px;
+      background: #f6f8fa;
+      color: #24292f;
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid #d0d7de;
+      box-shadow: 2px 0 8px rgba(149, 157, 165, 0.2);
     }
 
-    #controls h2 {
-      color: #ffffff;
-      margin-bottom: 20px;
-      font-size: 16px;
+    #branding {
+      padding: 16px 12px;
+      border-bottom: 1px solid #d0d7de;
+      background: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 12px;
     }
 
-    #controls label {
-      display: block;
-      margin-top: 15px;
-      margin-bottom: 5px;
+    #fabrica-logo {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      font-weight: 700;
+      color: white;
+      flex-shrink: 0;
+    }
+
+    #branding-text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    #branding-title {
       font-size: 13px;
+      font-weight: 600;
+      color: #24292f;
+      line-height: 1.2;
     }
 
-    #controls select,
-    #controls input[type="number"] {
-      width: 100%;
-      padding: 6px;
-      background: #3c3c3c;
-      border: 1px solid #454545;
-      color: #cccccc;
-      border-radius: 3px;
+    #branding-subtitle {
+      font-size: 10px;
+      color: #57606a;
+      line-height: 1.2;
     }
 
-    #controls button {
+    #sidebar-header {
+      padding: 8px 12px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #57606a;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid #d0d7de;
+      background: #f6f8fa;
+    }
+
+    #sidebar-settings {
+      padding: 12px;
+      border-top: 1px solid #d0d7de;
+      background: #f6f8fa;
+    }
+
+    #sidebar-settings label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #57606a;
+    }
+
+    #sidebar-settings select,
+    #sidebar-settings input[type="number"] {
       width: 100%;
-      margin-top: 10px;
-      padding: 8px;
-      background: #0e639c;
+      padding: 4px 6px;
+      background: #ffffff;
+      border: 1px solid #d0d7de;
+      color: #24292f;
+      border-radius: 4px;
+      font-size: 11px;
+      margin-bottom: 8px;
+    }
+
+    #sidebar-settings select:focus,
+    #sidebar-settings input[type="number"]:focus {
+      outline: none;
+      border-color: #0969da;
+      box-shadow: 0 0 0 2px rgba(9, 105, 218, 0.1);
+    }
+
+    /* File Explorer Styles */
+    #file-list {
+      flex: 1;
+      overflow-y: auto;
+      background: #f6f8fa;
+    }
+
+    .file-item {
+      padding: 3px 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.05s;
+      font-size: 13px;
+      color: #24292f;
+      user-select: none;
+    }
+
+    .file-item:hover {
+      background: #e1e4e8;
+    }
+
+    .file-item.selected {
+      background: #ddf4ff;
+    }
+
+    .file-icon {
+      font-size: 12px;
+      opacity: 0.8;
+    }
+
+    /* Console Panel - DevTools Style */
+    #console-toggle {
+      position: fixed;
+      bottom: 16px;
+      right: 16px;
+      width: 40px;
+      height: 40px;
+      background: #2da44e;
       color: white;
       border: none;
-      border-radius: 3px;
+      border-radius: 50%;
       cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      z-index: 1000;
+      transition: all 0.2s;
+    }
+
+    #console-toggle.console-open {
+      /* Stay on right side, just move up above console */
+      right: 16px;
+    }
+
+    #console-toggle:hover {
+      background: #2c974b;
+      transform: scale(1.05);
+    }
+
+    #console-panel {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 250px;
+      background: #ffffff;
+      border-top: 1px solid #d0d7de;
+      box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+      display: none;
+      flex-direction: column;
+      z-index: 999;
+    }
+
+    #console-panel.open {
+      display: flex;
+    }
+
+    #console-resize-handle {
+      height: 5px;
+      background: #f6f8fa;
+      cursor: ns-resize;
+      border-bottom: 1px solid #d0d7de;
+      transition: background 0.2s;
+    }
+
+    #console-resize-handle:hover {
+      background: #e1e4e8;
+    }
+
+    #console-header {
+      padding: 8px 12px;
+      background: #f6f8fa;
+      border-bottom: 1px solid #d0d7de;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       font-size: 13px;
+      font-weight: 600;
+      color: #24292f;
     }
 
-    #controls button:hover {
-      background: #1177bb;
+    #console-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
-    #console-log {
-      margin-top: 20px;
-      padding: 10px;
-      background: #252526;
-      border: 1px solid #454545;
-      border-radius: 3px;
-      max-height: 300px;
+    #console-search {
+      padding: 4px 8px;
+      border: 1px solid #d0d7de;
+      border-radius: 4px;
+      font-size: 11px;
+      width: 150px;
+    }
+
+    #console-search:focus {
+      outline: none;
+      border-color: #0969da;
+      box-shadow: 0 0 0 2px rgba(9, 105, 218, 0.1);
+    }
+
+    #console-header button {
+      background: transparent;
+      border: none;
+      color: #57606a;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      transition: all 0.1s;
+    }
+
+    #console-header button:hover {
+      background: #e1e4e8;
+      color: #24292f;
+    }
+
+    #console-header label {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 400;
+      color: #57606a;
+      cursor: pointer;
+      margin: 0;
+    }
+
+    #console-header input[type="checkbox"] {
+      cursor: pointer;
+    }
+
+    #console-content {
+      flex: 1;
       overflow-y: auto;
-      font-family: 'Courier New', monospace;
+      padding: 10px;
+      font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
       font-size: 11px;
     }
 
     .log-entry {
       padding: 2px 0;
-      border-bottom: 1px solid #333;
+      border-bottom: 1px solid #f6f8fa;
+      color: #24292f;
     }
 
     .log-entry.error {
-      color: #f48771;
+      color: #cf222e;
     }
 
     .log-entry.warn {
-      color: #cca700;
+      color: #bf8700;
     }
 
     .log-entry.info {
-      color: #75beff;
+      color: #0969da;
+    }
+
+    .log-entry mark {
+      background-color: #fff3cd;
+      color: #24292f;
+      border-radius: 2px;
+      padding: 0 2px;
+    }
+
+    .log-entry mark.current-match {
+      background-color: #ffc107;
+      font-weight: bold;
     }
 
     #editor-container {
@@ -100,6 +313,11 @@
       display: flex;
       flex-direction: column;
       background: var(--vscode-editor-background, #1e1e1e);
+      transition: margin-bottom 0.2s;
+    }
+
+    #editor-container.console-open {
+      margin-bottom: 250px;
     }
 
     #editor {
@@ -136,24 +354,51 @@
 </head>
 <body data-theme="light" data-mode="livePreview">
   <div id="controls">
-    <h2>🧪 Development Simulator</h2>
+    <div id="branding">
+      <div id="fabrica-logo">f</div>
+      <div id="branding-text">
+        <div id="branding-title">fabriqa.ai markdown editor</div>
+        <div id="branding-subtitle">obsidian-like markdown editing</div>
+      </div>
+    </div>
+    <div id="sidebar-header">Test Files</div>
+    <div id="file-list"></div>
+    <div id="sidebar-settings">
+      <label for="mode-select">Mode</label>
+      <select id="mode-select">
+        <option value="livePreview" selected>Live Preview</option>
+        <option value="source">Source</option>
+        <option value="reading">Reading</option>
+      </select>
+      <label for="font-size">Font Size</label>
+      <input type="number" id="font-size" value="14" min="8" max="32">
+    </div>
+  </div>
 
-    <label for="mode-select">Editor Mode:</label>
-    <select id="mode-select">
-      <option value="livePreview" selected>Live Preview</option>
-      <option value="source">Source</option>
-      <option value="reading">Reading</option>
-    </select>
+  <!-- Console Toggle Button -->
+  <button id="console-toggle" onclick="toggleConsole()">
+    <span>⌘</span>
+  </button>
 
-    <label for="font-size">Font Size:</label>
-    <input type="number" id="font-size" value="14" min="8" max="32">
+  <!-- Console Panel -->
+  <div id="console-panel">
+    <div id="console-resize-handle"></div>
+    <div id="console-header">
+      <span>📋 Console</span>
+      <div id="console-controls">
+        <input type="text" id="console-search" placeholder="Find..." oninput="searchConsole(this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();findNext();}"
 
-    <button onclick="loadSampleContent()">Load Sample Markdown</button>
-    <button onclick="clearEditor()">Clear Editor</button>
-    <button onclick="clearConsole()">Clear Console</button>
-
-    <h2 style="margin-top: 30px;">📋 Console</h2>
-    <div id="console-log"></div>
+>
+        <button onclick="findNext()">▼</button>
+        <label>
+          <input type="checkbox" id="auto-scroll" checked>
+          Auto-scroll
+        </label>
+        <button onclick="clearConsole()">Clear</button>
+        <button onclick="toggleConsole()">✕</button>
+      </div>
+    </div>
+    <div id="console-content"></div>
   </div>
 
   <div id="editor-container">
@@ -161,6 +406,9 @@
       <div class="loading">Loading editor...</div>
     </div>
   </div>
+
+  <!-- Embedded test file data -->
+  <script src="./test-data.js"></script>
 
   <script>
     // Simulate VS Code API
@@ -202,7 +450,7 @@
     }
 
     function logConsole(level, message, data) {
-      const consoleLog = document.getElementById('console-log');
+      const consoleContent = document.getElementById('console-content');
       const entry = document.createElement('div');
       entry.className = `log-entry ${level}`;
       const timestamp = new Date().toLocaleTimeString();
@@ -210,12 +458,148 @@
       if (data && typeof data === 'object') {
         entry.textContent += ` ${JSON.stringify(data).substring(0, 100)}`;
       }
-      consoleLog.appendChild(entry);
-      consoleLog.scrollTop = consoleLog.scrollHeight;
+      entry.dataset.fullText = entry.textContent; // Store for filtering
+      consoleContent.appendChild(entry);
+
+      // Auto-scroll if checkbox is checked
+      const autoScroll = document.getElementById('auto-scroll');
+      if (autoScroll && autoScroll.checked) {
+        consoleContent.scrollTop = consoleContent.scrollHeight;
+      }
     }
 
     function clearConsole() {
-      document.getElementById('console-log').innerHTML = '';
+      document.getElementById('console-content').innerHTML = '';
+      // Reset search state
+      window.consoleSearchMatches = [];
+      window.currentMatchIndex = -1;
+    }
+
+    // Search state
+    window.consoleSearchMatches = [];
+    window.currentMatchIndex = -1;
+
+    function searchConsole(searchText) {
+      const consoleContent = document.getElementById('console-content');
+      const entries = consoleContent.querySelectorAll('.log-entry');
+      const autoScroll = document.getElementById('auto-scroll');
+
+      // Reset search state
+      window.consoleSearchMatches = [];
+      window.currentMatchIndex = -1;
+
+      // Uncheck auto-scroll when searching
+      if (searchText && autoScroll.checked) {
+        autoScroll.checked = false;
+      }
+
+      entries.forEach(entry => {
+        const text = entry.dataset.fullText || entry.textContent;
+
+        if (!searchText) {
+          // No search text - restore original content
+          entry.innerHTML = text;
+          return;
+        }
+
+        // Case-insensitive search
+        const regex = new RegExp(`(${searchText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+        const matches = text.match(regex);
+
+        if (matches) {
+          // Highlight all matches in this entry
+          const highlighted = text.replace(regex, '<mark>$1</mark>');
+          entry.innerHTML = highlighted;
+
+          // Add all matches in this entry to the search matches array
+          const marks = entry.querySelectorAll('mark');
+          marks.forEach(mark => {
+            window.consoleSearchMatches.push(mark);
+          });
+        } else {
+          // No match - restore original content
+          entry.innerHTML = text;
+        }
+      });
+
+      // If we have matches, highlight the first one
+      if (window.consoleSearchMatches.length > 0) {
+        window.currentMatchIndex = 0;
+        highlightCurrentMatch();
+      }
+    }
+
+    function findNext() {
+      if (window.consoleSearchMatches.length === 0) {
+        return;
+      }
+
+      // Move to next match (loop back to 0 when reaching the end)
+      window.currentMatchIndex = (window.currentMatchIndex + 1) % window.consoleSearchMatches.length;
+      highlightCurrentMatch();
+    }
+
+    function highlightCurrentMatch() {
+      const consoleContent = document.getElementById('console-content');
+
+      // Remove current-match class from all marks
+      window.consoleSearchMatches.forEach(mark => {
+        mark.classList.remove('current-match');
+      });
+
+      // Add current-match class to the current match
+      const currentMark = window.consoleSearchMatches[window.currentMatchIndex];
+      if (currentMark) {
+        currentMark.classList.add('current-match');
+
+        // Scroll the current match into view
+        currentMark.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
+        });
+      }
+    }
+
+    function toggleConsole() {
+      const panel = document.getElementById('console-panel');
+      const toggleButton = document.getElementById('console-toggle');
+      const editorContainer = document.getElementById('editor-container');
+
+      panel.classList.toggle('open');
+      editorContainer.classList.toggle('console-open');
+
+      // Update button position and editor margin
+      if (panel.classList.contains('open')) {
+        toggleButton.classList.add('console-open');
+        updateToggleButtonPosition();
+        updateEditorMargin();
+      } else {
+        toggleButton.classList.remove('console-open');
+        // Reset button to original position at bottom-left corner
+        toggleButton.style.bottom = '16px';
+        // Reset editor margin
+        editorContainer.style.marginBottom = '';
+      }
+    }
+
+    function updateToggleButtonPosition() {
+      const panel = document.getElementById('console-panel');
+      const toggleButton = document.getElementById('console-toggle');
+
+      if (panel.classList.contains('open')) {
+        const panelHeight = panel.offsetHeight;
+        toggleButton.style.bottom = `${panelHeight + 16}px`;
+      }
+    }
+
+    function updateEditorMargin() {
+      const panel = document.getElementById('console-panel');
+      const editorContainer = document.getElementById('editor-container');
+
+      if (panel.classList.contains('open')) {
+        const panelHeight = panel.offsetHeight;
+        editorContainer.style.marginBottom = `${panelHeight}px`;
+      }
     }
 
     function switchMode(mode) {
@@ -229,57 +613,75 @@
       });
     }
 
-    function loadSampleContent() {
-      currentContent = `# Welcome to Fabriqa Markdown Editor
+    // File list from embedded data
+    let selectedFile = null;
 
-## Features
+    // Load file list
+    function loadFileList() {
+      const fileList = document.getElementById('file-list');
+      fileList.innerHTML = '';
 
-This is a **Live Preview** mode test. You can:
+      const files = Object.keys(TEST_FILES).sort();
 
-- Type markdown and see it rendered *as you type*
-- Use **bold** and *italic* text
-- Create [links](https://example.com)
-- Add \`inline code\`
-
-### Code Blocks
-
-\`\`\`javascript
-function hello() {
-  console.log("Hello, World!");
-}
-\`\`\`
-
-## Lists
-
-1. First item
-2. Second item
-3. Third item
-
-## Blockquotes
-
-> This is a quote
->
-> With multiple lines
-
----
-
-Try switching between modes using the toolbar buttons!
-`;
-
-      simulateExtensionMessage({
-        type: 'update',
-        content: currentContent,
-        uri: 'simulator://test.md'
+      files.forEach(file => {
+        const fileItem = document.createElement('div');
+        fileItem.className = 'file-item';
+        fileItem.onclick = () => loadFile(file, fileItem);
+        fileItem.innerHTML = `
+          <span class="file-icon">📄</span>
+          <span>${file}</span>
+        `;
+        fileList.appendChild(fileItem);
       });
     }
 
-    function clearEditor() {
-      currentContent = '';
-      simulateExtensionMessage({
-        type: 'update',
-        content: '',
-        uri: 'simulator://test.md'
+    // Load file content from embedded data
+    function loadFile(filename, fileItem) {
+      // Remove previous selection
+      document.querySelectorAll('.file-item').forEach(item => {
+        item.classList.remove('selected');
       });
+
+      // Mark as selected
+      if (fileItem) {
+        fileItem.classList.add('selected');
+      }
+      selectedFile = filename;
+
+      // Update URL hash
+      window.location.hash = encodeURIComponent(filename);
+
+      if (TEST_FILES[filename]) {
+        currentContent = TEST_FILES[filename];
+
+        simulateExtensionMessage({
+          type: 'update',
+          content: currentContent,
+          uri: `simulator://${filename}`
+        });
+
+        logConsole('info', `Loaded file: ${filename}`);
+      } else {
+        logConsole('error', `File not found: ${filename}`);
+      }
+    }
+
+    // Load file from URL hash on page load
+    function loadFileFromHash() {
+      const hash = window.location.hash.substring(1); // Remove #
+      if (hash) {
+        const filename = decodeURIComponent(hash);
+        if (TEST_FILES[filename]) {
+          // Find the file item and select it
+          const fileItems = document.querySelectorAll('.file-item');
+          fileItems.forEach(item => {
+            const itemFilename = item.querySelector('span:last-child').textContent;
+            if (itemFilename === filename) {
+              loadFile(filename, item);
+            }
+          });
+        }
+      }
     }
 
     // Mode switcher
@@ -321,6 +723,57 @@ Try switching between modes using the toolbar buttons!
       logConsole('error', args.join(' '));
     };
 
+    // Console resize functionality
+    let isResizing = false;
+    let startY = 0;
+    let startHeight = 0;
+
+    const resizeHandle = document.getElementById('console-resize-handle');
+    const consolePanel = document.getElementById('console-panel');
+
+    resizeHandle.addEventListener('mousedown', (e) => {
+      isResizing = true;
+      startY = e.clientY;
+      startHeight = consolePanel.offsetHeight;
+      document.body.style.cursor = 'ns-resize';
+      document.body.style.userSelect = 'none';
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (!isResizing) return;
+
+      const delta = startY - e.clientY;
+      const newHeight = startHeight + delta;
+
+      // Min height: 100px, Max height: 80% of window
+      const minHeight = 100;
+      const maxHeight = window.innerHeight * 0.8;
+
+      if (newHeight >= minHeight && newHeight <= maxHeight) {
+        consolePanel.style.height = newHeight + 'px';
+        // Update toggle button position and editor margin while resizing
+        updateToggleButtonPosition();
+        updateEditorMargin();
+      }
+    });
+
+    document.addEventListener('mouseup', () => {
+      if (isResizing) {
+        isResizing = false;
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+      }
+    });
+
+    // Initialize file list
+    loadFileList();
+
+    // Load file from URL hash if present
+    loadFileFromHash();
+
+    // Listen for hash changes
+    window.addEventListener('hashchange', loadFileFromHash);
+
     // Load the webview script
     const script = document.createElement('script');
     script.src = '../dist/webview.js';
@@ -335,7 +788,7 @@ Try switching between modes using the toolbar buttons!
     };
     document.body.appendChild(script);
 
-    logConsole('info', 'Simulator loaded. Click "Load Sample Markdown" to get started.');
+    logConsole('info', 'Simulator loaded. Click any test file to open it.');
   </script>
 </body>
 </html>

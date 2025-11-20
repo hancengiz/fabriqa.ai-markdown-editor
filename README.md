@@ -1,5 +1,7 @@
 # fabriqa.ai Markdown Editor
 
+Official website: [https://fabriqa.ai](https://fabriqa.ai)
+
 An Obsidian-like markdown editor extension for Visual Studio Code with three editing modes:
 
 - **Live Preview**: Cursor-based syntax revealing (markdown syntax appears only on the line with the cursor)
@@ -151,6 +153,25 @@ Search intelligently reveals hidden content:
 - `Cmd+Option+7` / `Ctrl+Alt+7` - Numbered list
 - `Cmd+Option+Q` / `Ctrl+Alt+Q` - Blockquote
 - `Cmd+Option+T` / `Ctrl+Alt+T` - Toggle checkbox
+
+### Code Editing (CodeMirror Standard Shortcuts)
+- `Option+Up` / `Alt+Up` - Move line up
+- `Option+Down` / `Alt+Down` - Move line down
+- `Option+Shift+Up` / `Alt+Shift+Up` - Duplicate line above
+- `Option+Shift+Down` / `Alt+Shift+Down` - Duplicate line below
+- `Cmd+Shift+K` / `Ctrl+Shift+K` - Delete current line
+- `Cmd+Enter` / `Ctrl+Enter` - Insert line below
+- `Cmd+Shift+Enter` / `Ctrl+Shift+Enter` - Insert line above
+- `Cmd+D` / `Ctrl+D` - Select next occurrence
+- `Cmd+U` / `Ctrl+U` - Undo last cursor operation
+- `Cmd+/` / `Ctrl+/` - Toggle line comment
+- `Cmd+[` / `Ctrl+[` - Decrease indent
+- `Cmd+]` / `Ctrl+]` - Increase indent
+
+### History
+- `Cmd+Z` / `Ctrl+Z` - Undo
+- `Cmd+Shift+Z` / `Ctrl+Shift+Z` - Redo
+- `Cmd+Y` / `Ctrl+Y` - Redo (alternative)
 
 ## Commands
 

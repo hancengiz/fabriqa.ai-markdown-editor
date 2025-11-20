@@ -20,18 +20,15 @@ export const readingModePlugin = ViewPlugin.fromClass(
     }
 
     /**
-     * Initialize Mermaid with theme-aware configuration
+     * Initialize Mermaid (always use light theme)
      */
     initMermaid() {
       if (this.mermaidInitialized) return;
 
-      // Detect VS Code theme (light vs dark)
-      const isDark = document.body.classList.contains('vscode-dark') ||
-                     document.body.classList.contains('vscode-high-contrast');
-
+      // Always use light theme (extension only supports light theme)
       mermaid.initialize({
         startOnLoad: false,
-        theme: isDark ? 'dark' : 'default',
+        theme: 'default',
         securityLevel: 'loose',
         fontFamily: 'var(--vscode-editor-font-family)',
       });
@@ -52,6 +49,12 @@ export const readingModePlugin = ViewPlugin.fromClass(
         if (cmContent) {
           (cmContent as HTMLElement).style.display = '';
         }
+
+        // Restore parent element styles
+        const parentElement = this.view.dom as HTMLElement;
+        parentElement.style.position = '';
+        parentElement.style.width = '';
+        parentElement.style.height = '';
       }
 
       // Remove HTML container
@@ -87,6 +90,12 @@ export const readingModePlugin = ViewPlugin.fromClass(
         if (!this.htmlContainer) {
           this.htmlContainer = document.createElement('div');
           this.htmlContainer.className = 'reading-mode-content';
+
+          // Ensure parent container has proper positioning and sizing
+          const parentElement = view.dom as HTMLElement;
+          parentElement.style.position = 'relative';
+          parentElement.style.width = '100%';
+          parentElement.style.height = '100%';
 
           // Apply markdown-preview-enhanced styling
           const style = document.createElement('style');
@@ -1171,16 +1180,47 @@ export const readingModePlugin = ViewPlugin.fromClass(
 }
 
 .reading-mode-content .task-list-item-checkbox {
-  margin: 0 .2em .25em -1.4em;
+  margin: 0 .5em .25em -1.4em;
   vertical-align: middle;
+  appearance: none;
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border: 2px solid #d0d0d0;
+  border-radius: 3px;
+  background: #ffffff;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.reading-mode-content .task-list-item-checkbox:hover {
+  border-color: #4d82f3;
+}
+
+.reading-mode-content .task-list-item-checkbox:checked {
+  background-color: #4d82f3;
+  border-color: #4d82f3;
+}
+
+.reading-mode-content .task-list-item-checkbox:checked::after {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 1px;
+  width: 5px;
+  height: 10px;
+  border: solid #ffffff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
 }
 
 .reading-mode-content ul:dir(rtl) .task-list-item-checkbox {
-  margin: 0 -1.6em .25em .2em;
+  margin: 0 -1.6em .25em .5em;
 }
 
 .reading-mode-content ol:dir(rtl) .task-list-item-checkbox {
-  margin: 0 -1.6em .25em .2em;
+  margin: 0 -1.6em .25em .5em;
 }
 
 .reading-mode-content .contains-task-list:hover .task-list-item-convert-container,
@@ -1408,7 +1448,7 @@ export const readingModePlugin = ViewPlugin.fromClass(
           // Render the diagram
           const { svg } = await mermaid.render(diagramId, mermaidCode);
 
-          // Create a container for the diagram
+          // Create a container for the diagram - aligned to left
           const container = document.createElement('div');
           container.className = 'mermaid-diagram-container';
           container.innerHTML = svg;
@@ -1418,9 +1458,38 @@ export const readingModePlugin = ViewPlugin.fromClass(
             border-radius: 4px;
             padding: 16px;
             background: var(--vscode-editor-background);
-            margin: 16px 0;
+            margin: 16px 0 16px 0;
             overflow: auto;
+            width: 75%;
+            max-width: 75%;
+            display: block;
           `;
+
+          // Style the SVG for responsive rendering
+          const svgElement = container.querySelector('svg');
+          if (svgElement) {
+            // Get the original dimensions for viewBox
+            const width = svgElement.getAttribute('width');
+            const height = svgElement.getAttribute('height');
+
+            // Ensure viewBox is set for proper scaling
+            if (width && height && !svgElement.getAttribute('viewBox')) {
+              svgElement.setAttribute('viewBox', `0 0 ${width} ${height}`);
+            }
+
+            // Remove fixed width/height attributes to allow responsive scaling
+            svgElement.removeAttribute('width');
+            svgElement.removeAttribute('height');
+
+            // Apply responsive CSS - constrain to container width and max height
+            svgElement.style.width = '100%';
+            svgElement.style.maxWidth = '100%';
+            svgElement.style.height = 'auto';
+            svgElement.style.maxHeight = '600px';
+            svgElement.style.display = 'block';
+            svgElement.style.marginLeft = '0';
+            svgElement.style.marginRight = 'auto';
+          }
 
           // Replace the pre element with the rendered diagram
           preElement.replaceWith(container);

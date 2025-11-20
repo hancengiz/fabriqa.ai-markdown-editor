@@ -75,26 +75,63 @@ class CheckboxWidget extends WidgetType {
   }
 
   toDOM() {
-    // Create a wrapper span to ensure proper event handling
     const wrapper = document.createElement('span');
     wrapper.className = 'cm-task-checkbox-wrapper';
     wrapper.style.cssText = `
       display: inline-block;
       vertical-align: middle;
-      margin-right: 4px;
+      margin-right: 6px;
+      position: relative;
     `;
 
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
     checkbox.checked = this.checked;
     checkbox.className = 'cm-task-checkbox';
+
+    // Simple checkbox styling - gray border unchecked, dark gray/black checked
     checkbox.style.cssText = `
-      cursor: pointer;
-      pointer-events: auto;
+      appearance: none;
+      -webkit-appearance: none;
       width: 16px;
       height: 16px;
+      border: 1.5px solid #666;
+      border-radius: 2px;
+      background: #ffffff;
+      cursor: pointer;
+      pointer-events: auto;
       vertical-align: middle;
+      position: relative;
     `;
+
+    // Add checked state styling
+    if (this.checked) {
+      checkbox.style.backgroundColor = '#333';
+      checkbox.style.borderColor = '#333';
+
+      // Create checkmark SVG
+      const checkmark = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      checkmark.setAttribute('width', '12');
+      checkmark.setAttribute('height', '12');
+      checkmark.setAttribute('viewBox', '0 0 12 12');
+      checkmark.style.cssText = `
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        pointer-events: none;
+      `;
+
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('fill', 'none');
+      path.setAttribute('stroke', '#ffffff');
+      path.setAttribute('stroke-width', '2.5');
+      path.setAttribute('stroke-linecap', 'round');
+      path.setAttribute('stroke-linejoin', 'round');
+      path.setAttribute('d', 'M2 6l3 3 5-6');
+
+      checkmark.appendChild(path);
+      wrapper.appendChild(checkmark);
+    }
 
     // Handle checkbox click to toggle state in document
     checkbox.addEventListener('mousedown', (e) => {
@@ -495,16 +532,28 @@ export const livePreviewPlugin = ViewPlugin.fromClass(
         }
       });
 
-      // If this is a mermaid code block, check cursor position
+      // If this is a mermaid code block, check cursor position and selection
       if (isMermaid && mermaidCode) {
-        const cursorPos = view.state.selection.main.head;
+        const selection = view.state.selection.main;
+        const cursorPos = selection.head;
+        const selectionStart = selection.from;
+        const selectionEnd = selection.to;
 
-        // Obsidian-style behavior: if cursor is inside the code block, show raw code
-        // This is important for search functionality - when a match is found in mermaid code,
-        // the cursor moves there and the user should see the raw code with the highlighted match
-        if (cursorPos >= codeStart && cursorPos <= codeEnd) {
-          // Cursor is inside this mermaid block - don't add widget or hiding
-          // Show the raw code so user can see/edit it
+        // Obsidian-style behavior: show raw code if:
+        // 1. Cursor is inside the code block, OR
+        // 2. The code block is part of a text selection (selection overlaps with code block)
+        // This is important for:
+        // - Search functionality - when a match is found in mermaid code
+        // - Copy/paste - user needs to see the raw code when selecting text
+        // - Editing - user needs to see raw code when cursor is inside
+        const cursorInside = cursorPos >= codeStart && cursorPos <= codeEnd;
+        const selectionOverlaps =
+          (selectionStart <= codeEnd && selectionEnd >= codeStart) && // Selection overlaps with code block
+          (selectionStart !== selectionEnd); // There's an actual selection (not just cursor)
+
+        if (cursorInside || selectionOverlaps) {
+          // Cursor is inside or code block is selected - don't add widget or hiding
+          // Show the raw code so user can see/edit/copy it
           return;
         }
 
