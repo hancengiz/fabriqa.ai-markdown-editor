@@ -18,10 +18,18 @@ The extension provides a custom sidebar to organize your markdown files by secti
 
 Quickly switch between editing modes using the settings menu in the editor toolbar, or use keyboard shortcuts for faster navigation.
 
+### Mermaid Diagram Support
+![Mermaid sequence diagram rendered in Live Preview mode with View Code button](https://raw.githubusercontent.com/hancengiz/fabriqa.ai.markdown.editor/master/screenshots/screenshot-3.png)
+
+Create beautiful diagrams using Mermaid syntax. In Live Preview mode, diagrams are rendered automatically with a "View Code" button to toggle back to source. Supports all Mermaid diagram types: flowcharts, sequence diagrams, class diagrams, state diagrams, ER diagrams, Gantt charts, pie charts, and more.
+
 ## Features
 
 - 📝 **Three Editing Modes**: Switch seamlessly between Live Preview, Source, and Reading modes
+- 📊 **Mermaid Diagrams**: Full support for all Mermaid diagram types with live rendering and "View Code" toggle
 - 🎯 **Config-Driven Sidebar**: Organize markdown files by sections using `.vscode/fabriqa-markdown-editor-config.json`
+- 🔍 **Integrated Search**: Native VS Code find (Cmd+F) with smart content reveal in diagrams and hidden elements
+- ✅ **Interactive Checkboxes**: Click to toggle task list items directly in Live Preview mode
 - 🎨 **VS Code Theme Integration**: Automatically adapts to your VS Code theme
 - ⚡ **CodeMirror 6**: Powered by the modern CodeMirror 6 editor
 - 🔒 **Secure**: Content Security Policy and DOMPurify sanitization
@@ -87,6 +95,12 @@ Configure the extension in VS Code settings (`Cmd/Ctrl + ,`):
 - `Cmd+Shift+P` / `Ctrl+Shift+P` - Switch to Live Preview
 - `Cmd+Shift+S` / `Ctrl+Shift+S` - Switch to Source Mode
 - `Cmd+Shift+R` / `Ctrl+Shift+R` - Switch to Reading Mode
+
+### Search & Navigation
+- `Cmd+F` / `Ctrl+F` - Find in document
+- `F3` - Find next
+- `Shift+F3` - Find previous
+- `Escape` - Clear search
 
 ### Markdown Formatting (Cmd+Option on Mac, Ctrl+Alt on Windows/Linux)
 - `Cmd+Option+B` / `Ctrl+Alt+B` - Bold
