@@ -5,7 +5,7 @@ import { syntaxHighlighting, defaultHighlightStyle } from '@codemirror/language'
 import { keymap, highlightSpecialChars, drawSelection, highlightActiveLine, dropCursor, rectangularSelection, crosshairCursor, lineNumbers, highlightActiveLineGutter } from '@codemirror/view';
 import { StyleModule } from 'style-mod';
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
-import { SearchQuery, setSearchQuery, highlightSelectionMatches, searchState, getSearchQuery } from '@codemirror/search';
+import { SearchQuery, setSearchQuery, highlightSelectionMatches, search, getSearchQuery } from '@codemirror/search';
 import { autocompletion, completionKeymap, closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete';
 import { foldGutter, indentOnInput, syntaxHighlighting as syntaxHighlightingFacet, bracketMatching } from '@codemirror/language';
 import { lintKeymap } from '@codemirror/lint';
@@ -44,7 +44,7 @@ const basicExtensions = [
   crosshairCursor(),
   highlightActiveLine(),
   highlightSelectionMatches(),
-  searchState(), // Add search state without panel or keymap
+  search({ top: false }), // Add search support without panel UI
   keymap.of([
     // Mode switching shortcuts (editor rendering modes)
     {
@@ -563,12 +563,15 @@ function handleFindNext(): void {
 
   try {
     // Get current search query from editor state
-    const query = getSearchQuery(editorView.state);
+    const querySpec = getSearchQuery(editorView.state);
 
-    if (!query || !query.search) {
+    if (!querySpec || !querySpec.search) {
       log('Find next: no active search');
       return;
     }
+
+    // Create a new SearchQuery instance from the spec
+    const query = new SearchQuery(querySpec);
 
     const state = editorView.state;
     const currentPos = state.selection.main.head;
@@ -603,12 +606,15 @@ function handleFindPrevious(): void {
 
   try {
     // Get current search query from editor state
-    const query = getSearchQuery(editorView.state);
+    const querySpec = getSearchQuery(editorView.state);
 
-    if (!query || !query.search) {
+    if (!querySpec || !querySpec.search) {
       log('Find previous: no active search');
       return;
     }
+
+    // Create a new SearchQuery instance from the spec
+    const query = new SearchQuery(querySpec);
 
     const state = editorView.state;
     const currentPos = state.selection.main.from;

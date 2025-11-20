@@ -21,6 +21,9 @@ export function registerCommands(
   let lastClickedFile = '';
   const DOUBLE_CLICK_THRESHOLD = 500; // milliseconds
 
+  // Track last search query for input box default value
+  let lastSearchQuery = '';
+
   // Open markdown file at a specific position (for search results)
   context.subscriptions.push(
     vscode.commands.registerCommand('fabriqa.openAtPosition', async (uri: vscode.Uri, line?: number, character?: number) => {
@@ -426,10 +429,11 @@ export function registerCommands(
       const query = await vscode.window.showInputBox({
         prompt: 'Find in document',
         placeHolder: 'Enter search text',
-        value: ''
+        value: lastSearchQuery // Use last search as default
       });
 
       if (query !== undefined && query !== '') {
+        lastSearchQuery = query; // Save for next time
         await editorProvider.sendToActiveWebview({
           type: 'find',
           query: query,
