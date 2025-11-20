@@ -5,7 +5,7 @@ import { syntaxHighlighting, defaultHighlightStyle } from '@codemirror/language'
 import { keymap, highlightSpecialChars, drawSelection, highlightActiveLine, dropCursor, rectangularSelection, crosshairCursor, lineNumbers, highlightActiveLineGutter } from '@codemirror/view';
 import { StyleModule } from 'style-mod';
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
-import { SearchQuery, setSearchQuery, highlightSelectionMatches, searchStateField } from '@codemirror/search';
+import { SearchQuery, setSearchQuery, highlightSelectionMatches, searchState, getSearchQuery } from '@codemirror/search';
 import { autocompletion, completionKeymap, closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete';
 import { foldGutter, indentOnInput, syntaxHighlighting as syntaxHighlightingFacet, bracketMatching } from '@codemirror/language';
 import { lintKeymap } from '@codemirror/lint';
@@ -44,6 +44,7 @@ const basicExtensions = [
   crosshairCursor(),
   highlightActiveLine(),
   highlightSelectionMatches(),
+  searchState(), // Add search state without panel or keymap
   keymap.of([
     // Mode switching shortcuts (editor rendering modes)
     {
@@ -562,15 +563,14 @@ function handleFindNext(): void {
 
   try {
     // Get current search query from editor state
-    const state = editorView.state;
-    const searchState = state.field(searchStateField, false);
+    const query = getSearchQuery(editorView.state);
 
-    if (!searchState || !searchState.query) {
+    if (!query || !query.search) {
       log('Find next: no active search');
       return;
     }
 
-    const query = searchState.query;
+    const state = editorView.state;
     const currentPos = state.selection.main.head;
 
     // Find next match after current position
@@ -603,15 +603,14 @@ function handleFindPrevious(): void {
 
   try {
     // Get current search query from editor state
-    const state = editorView.state;
-    const searchState = state.field(searchStateField, false);
+    const query = getSearchQuery(editorView.state);
 
-    if (!searchState || !searchState.query) {
+    if (!query || !query.search) {
       log('Find previous: no active search');
       return;
     }
 
-    const query = searchState.query;
+    const state = editorView.state;
     const currentPos = state.selection.main.from;
 
     // Find all matches before current position
