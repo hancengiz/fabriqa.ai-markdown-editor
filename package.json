@@ -261,6 +261,11 @@
           "minimum": 1,
           "maximum": 3,
           "description": "Line height multiplier"
+        },
+        "fabriqa.enableDebugLogging": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable debug logging (creates log files in .vscode/logs and shows detailed console output)"
         }
       }
     }

@@ -7,19 +7,29 @@ class LoggerService {
     this.outputChannel = vscode.window.createOutputChannel('fabriqa Markdown Editor');
   }
 
+  private isDebugEnabled(): boolean {
+    const config = vscode.workspace.getConfiguration('fabriqa');
+    return config.get<boolean>('enableDebugLogging', false);
+  }
+
   public info(message: string, ...args: any[]): void {
+    if (!this.isDebugEnabled()) {
+      return;
+    }
     const formatted = this.formatMessage('INFO', message, args);
     this.outputChannel.appendLine(formatted);
     console.log(formatted);
   }
 
   public warn(message: string, ...args: any[]): void {
+    // Always show warnings
     const formatted = this.formatMessage('WARN', message, args);
     this.outputChannel.appendLine(formatted);
     console.warn(formatted);
   }
 
   public error(message: string, error?: any): void {
+    // Always show errors
     const formatted = this.formatMessage('ERROR', message, [error]);
     this.outputChannel.appendLine(formatted);
     console.error(formatted, error);
@@ -30,6 +40,9 @@ class LoggerService {
   }
 
   public debug(message: string, ...args: any[]): void {
+    if (!this.isDebugEnabled()) {
+      return;
+    }
     const formatted = this.formatMessage('DEBUG', message, args);
     this.outputChannel.appendLine(formatted);
     console.debug(formatted);

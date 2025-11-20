@@ -15,12 +15,16 @@ export class WebviewLogger {
    * @param context Extension context
    */
   static initialize(context: vscode.ExtensionContext): void {
-    // Check if we're in debug mode
-    this.isDebugMode = process.env.VSCODE_DEBUG_MODE === 'true' ||
+    // Check if debug logging is enabled in settings
+    const config = vscode.workspace.getConfiguration('fabriqa');
+    const debugLoggingEnabled = config.get<boolean>('enableDebugLogging', false);
+
+    // Enable if setting is true OR in development mode
+    this.isDebugMode = debugLoggingEnabled ||
                        context.extensionMode === vscode.ExtensionMode.Development;
 
     if (!this.isDebugMode) {
-      console.log('[WebviewLogger] Not in debug mode, logging disabled');
+      console.log('[WebviewLogger] Debug logging disabled (enable in settings: fabriqa.enableDebugLogging)');
       return;
     }
 
