@@ -131,29 +131,6 @@ export class MermaidDiagramWidget extends WidgetType {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     `;
 
-    // Create "Fit to Content" button
-    const fitButton = document.createElement('button');
-    fitButton.className = 'mermaid-fit-btn';
-    fitButton.innerHTML = `
-      <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor">
-        <path d="M1.5 1a.5.5 0 0 0-.5.5v4a.5.5 0 0 1-1 0v-4A1.5 1.5 0 0 1 1.5 0h4a.5.5 0 0 1 0 1h-4zM10 .5a.5.5 0 0 1 .5-.5h4A1.5 1.5 0 0 1 16 1.5v4a.5.5 0 0 1-1 0v-4a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 1-.5-.5zM.5 10a.5.5 0 0 1 .5.5v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 1 0 1h-4A1.5 1.5 0 0 1 0 14.5v-4a.5.5 0 0 1 .5-.5zm15 0a.5.5 0 0 1 .5.5v4a1.5 1.5 0 0 1-1.5 1.5h-4a.5.5 0 0 1 0-1h4a.5.5 0 0 0 .5-.5v-4a.5.5 0 0 1 .5-.5z"/>
-      </svg>
-    `;
-    fitButton.title = 'Fit to content size';
-    fitButton.style.cssText = `
-      background: #007acc;
-      color: #ffffff;
-      border: none;
-      border-radius: 2px;
-      padding: 3px 5px;
-      font-size: 9px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-    `;
-
     // Create "View Code" button (code icon)
     const viewCodeButton = document.createElement('button');
     viewCodeButton.className = 'mermaid-code-btn';
@@ -205,7 +182,6 @@ export class MermaidDiagramWidget extends WidgetType {
       buttonContainer.appendChild(resetButton);
     }
 
-    buttonContainer.appendChild(fitButton);
     buttonContainer.appendChild(zoomButton);
     buttonContainer.appendChild(viewCodeButton);
 
@@ -229,12 +205,6 @@ export class MermaidDiagramWidget extends WidgetType {
         resetButton!.style.background = '#007acc';
       });
     }
-    fitButton.addEventListener('mouseenter', () => {
-      fitButton.style.background = '#005a9e';
-    });
-    fitButton.addEventListener('mouseleave', () => {
-      fitButton.style.background = '#007acc';
-    });
     zoomButton.addEventListener('mouseenter', () => {
       zoomButton.style.background = '#005a9e';
     });
@@ -283,26 +253,6 @@ export class MermaidDiagramWidget extends WidgetType {
         container.style.height = 'auto';
       });
     }
-
-    // Handle "Fit to Content" button click
-    fitButton.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-
-      // Get the actual SVG width from the rendered diagram
-      const svgElement = diagramContainer.querySelector('svg');
-      if (svgElement) {
-        // Get the actual rendered width of the SVG
-        const svgWidth = svgElement.getBoundingClientRect().width;
-
-        // Add padding (32px total: 16px on each side from container padding)
-        const containerWidth = svgWidth + 32;
-
-        // Set container to fit the SVG width
-        container.style.width = `${containerWidth}px`;
-        container.style.height = 'auto';
-      }
-    });
 
     // Handle "View Code" button click
     viewCodeButton.addEventListener('click', (e) => {
