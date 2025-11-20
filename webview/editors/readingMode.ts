@@ -1184,35 +1184,31 @@ export const readingModePlugin = ViewPlugin.fromClass(
   vertical-align: middle;
   appearance: none;
   -webkit-appearance: none;
-  width: 18px;
-  height: 18px;
-  border: 2px solid #d0d0d0;
-  border-radius: 3px;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid #666;
+  border-radius: 2px;
   background: #ffffff;
   cursor: pointer;
   position: relative;
-  transition: all 0.2s ease;
-}
-
-.reading-mode-content .task-list-item-checkbox:hover {
-  border-color: #4d82f3;
 }
 
 .reading-mode-content .task-list-item-checkbox:checked {
-  background-color: #4d82f3;
-  border-color: #4d82f3;
+  background-color: #333;
+  border-color: #333;
 }
 
 .reading-mode-content .task-list-item-checkbox:checked::after {
   content: '';
   position: absolute;
-  left: 5px;
-  top: 1px;
-  width: 5px;
+  left: 2px;
+  top: -1px;
+  width: 10px;
   height: 10px;
-  border: solid #ffffff;
-  border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 12 12' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill='none' stroke='%23ffffff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round' d='M2 6l3 3 5-6'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
 }
 
 .reading-mode-content ul:dir(rtl) .task-list-item-checkbox {
