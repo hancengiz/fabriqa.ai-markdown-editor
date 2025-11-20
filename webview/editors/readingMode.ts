@@ -109,7 +109,7 @@ export const readingModePlugin = ViewPlugin.fromClass(
   --base-text-weight-normal: 400;
   --base-text-weight-medium: 500;
   --base-text-weight-semibold: 600;
-  --fontStack-monospace: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+  --fontStack-monospace: Menlo, SFMono-Regular, Consolas, "Roboto Mono", monospace;
 
   /* Light theme colors - GitHub inspired */
   --fgColor-default: #1f2328;
@@ -178,7 +178,7 @@ export const readingModePlugin = ViewPlugin.fromClass(
   box-sizing: border-box;
   color: var(--fgColor-default);
   background-color: var(--bgColor-default);
-  font-family: -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans",Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji";
+  font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen-Sans,Ubuntu,Cantarell,"Helvetica Neue",sans-serif;
   font-size: 16px;
   line-height: 1.5;
   word-wrap: break-word;
@@ -1182,16 +1182,16 @@ export const readingModePlugin = ViewPlugin.fromClass(
   -webkit-appearance: none;
   width: 16px;
   height: 16px;
-  border: 1.5px solid #666;
-  border-radius: 2px;
+  border: 1.5px solid #d0d0d0;
+  border-radius: 3px;
   background: #ffffff;
   cursor: pointer;
   position: relative;
 }
 
 .reading-mode-content .task-list-item-checkbox:checked {
-  background-color: #333;
-  border-color: #333;
+  background-color: #6c63ff;
+  border-color: #6c63ff;
 }
 
 .reading-mode-content .task-list-item-checkbox:checked::after {

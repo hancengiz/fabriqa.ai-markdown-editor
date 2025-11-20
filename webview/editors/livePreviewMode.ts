@@ -89,14 +89,14 @@ class CheckboxWidget extends WidgetType {
     checkbox.checked = this.checked;
     checkbox.className = 'cm-task-checkbox';
 
-    // Simple checkbox styling - gray border unchecked, dark gray/black checked
+    // Obsidian-style checkbox - light gray border unchecked, purple when checked
     checkbox.style.cssText = `
       appearance: none;
       -webkit-appearance: none;
       width: 16px;
       height: 16px;
-      border: 1.5px solid #666;
-      border-radius: 2px;
+      border: 1.5px solid #d0d0d0;
+      border-radius: 3px;
       background: #ffffff;
       cursor: pointer;
       pointer-events: auto;
@@ -104,10 +104,10 @@ class CheckboxWidget extends WidgetType {
       position: relative;
     `;
 
-    // Add checked state styling
+    // Add checked state styling - Obsidian purple
     if (this.checked) {
-      checkbox.style.backgroundColor = '#333';
-      checkbox.style.borderColor = '#333';
+      checkbox.style.backgroundColor = '#6c63ff';
+      checkbox.style.borderColor = '#6c63ff';
 
       // Create checkmark SVG
       const checkmark = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -500,7 +500,7 @@ export const livePreviewPlugin = ViewPlugin.fromClass(
                   background-color: #f3f3f3;
                   padding: 2px 4px;
                   border-radius: 3px;
-                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+                  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
                 `
               }
             }),
