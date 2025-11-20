@@ -21,6 +21,26 @@ export function registerCommands(
   let lastClickedFile = '';
   const DOUBLE_CLICK_THRESHOLD = 500; // milliseconds
 
+  // Open markdown file at a specific position (for search results)
+  context.subscriptions.push(
+    vscode.commands.registerCommand('fabriqa.openAtPosition', async (uri: vscode.Uri, line?: number, character?: number) => {
+      try {
+        // Set pending reveal position
+        if (line !== undefined) {
+          editorProvider.setPendingReveal(uri, line, character || 0);
+        }
+
+        // Open with custom editor
+        await vscode.commands.executeCommand('vscode.openWith', uri, 'fabriqa.markdownEditor');
+
+        Logger.info(`Opened file at position: ${uri.fsPath} (line ${line}, col ${character})`);
+      } catch (error) {
+        Logger.error('Failed to open file at position', error);
+        vscode.window.showErrorMessage(`Failed to open file: ${error}`);
+      }
+    })
+  );
+
   // Open markdown file with custom editor
   context.subscriptions.push(
     vscode.commands.registerCommand('fabriqa.openMarkdownEditor', async (filePathOrUri?: string | vscode.Uri, preview?: boolean) => {
@@ -397,6 +417,47 @@ export function registerCommands(
           }
           break;
       }
+    })
+  );
+
+  // Find commands - global registration (not per-webview)
+  context.subscriptions.push(
+    vscode.commands.registerCommand('fabriqa.find', async () => {
+      const query = await vscode.window.showInputBox({
+        prompt: 'Find in document',
+        placeHolder: 'Enter search text',
+        value: ''
+      });
+
+      if (query !== undefined && query !== '') {
+        await editorProvider.sendToActiveWebview({
+          type: 'find',
+          query: query,
+          options: {
+            caseSensitive: false,
+            wholeWord: false,
+            regexp: false
+          }
+        });
+      }
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('fabriqa.findNext', async () => {
+      await editorProvider.sendToActiveWebview({ type: 'findNext' });
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('fabriqa.findPrevious', async () => {
+      await editorProvider.sendToActiveWebview({ type: 'findPrevious' });
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('fabriqa.clearFind', async () => {
+      await editorProvider.sendToActiveWebview({ type: 'clearFind' });
     })
   );
 

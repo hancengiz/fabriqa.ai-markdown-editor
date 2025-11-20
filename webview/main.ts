@@ -449,6 +449,10 @@ function handleMessage(event: MessageEvent): void {
       handleClearFind();
       break;
 
+    case 'revealPosition':
+      handleRevealPosition(message.line, message.character);
+      break;
+
     default:
       log(`Unknown message type: ${message.type}`);
   }
@@ -616,6 +620,32 @@ function handleClearFind(): void {
     log('Cleared find');
   } catch (error) {
     logError('Clear find failed', error);
+  }
+}
+
+function handleRevealPosition(line: number, character: number): void {
+  if (!editorView) return;
+
+  try {
+    // Convert line/character (1-indexed) to document position (0-indexed)
+    const doc = editorView.state.doc;
+    const lineNum = Math.max(1, Math.min(line, doc.lines)); // Clamp to valid range
+    const lineObj = doc.line(lineNum);
+    const charPos = Math.max(0, Math.min(character, lineObj.length)); // Clamp to line length
+    const pos = lineObj.from + charPos;
+
+    // Set selection and scroll into view
+    editorView.dispatch({
+      selection: { anchor: pos },
+      scrollIntoView: true
+    });
+
+    // Focus the editor
+    editorView.focus();
+
+    log(`Revealed position: line ${line}, character ${character} (doc pos ${pos})`);
+  } catch (error) {
+    logError('Reveal position failed', error);
   }
 }
 
