@@ -720,7 +720,7 @@ export const readingModePlugin = ViewPlugin.fromClass(
 }
 
 .reading-mode-content table tr:nth-child(2n) {
-  background-color: var(--bgColor-muted);
+  background-color: var(--bgColor-neutral-muted);
 }
 
 .reading-mode-content table img {
@@ -881,7 +881,7 @@ export const readingModePlugin = ViewPlugin.fromClass(
   font-size: 85%;
   line-height: 1.45;
   color: var(--fgColor-default);
-  background-color: var(--bgColor-muted);
+  background-color: var(--bgColor-neutral-muted);
   border-radius: 6px;
 }
 

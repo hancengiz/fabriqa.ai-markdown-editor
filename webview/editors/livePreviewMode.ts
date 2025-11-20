@@ -365,7 +365,7 @@ export const livePreviewPlugin = ViewPlugin.fromClass(
           // Hide emphasis marks (*, **, _, __) - matches any combination
           if (nodeText.match(/^[*_]+$/)) {
             decorations.push(
-              Decoration.replace({ inclusive: false }).range(from, to)
+              Decoration.replace({}).range(from, to)
             );
           }
           break;
