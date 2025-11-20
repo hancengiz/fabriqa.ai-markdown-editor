@@ -19,9 +19,9 @@ export class WebviewLogger {
     const config = vscode.workspace.getConfiguration('fabriqa');
     const debugLoggingEnabled = config.get<boolean>('enableDebugLogging', false);
 
-    // Enable if setting is true OR in development mode
-    this.isDebugMode = debugLoggingEnabled ||
-                       context.extensionMode === vscode.ExtensionMode.Development;
+    // Only enable if setting is explicitly true
+    // User must opt-in to logging
+    this.isDebugMode = debugLoggingEnabled;
 
     if (!this.isDebugMode) {
       console.log('[WebviewLogger] Debug logging disabled (enable in settings: fabriqa.enableDebugLogging)');
