@@ -1,5 +1,5 @@
 {
-  "name": "fabriqa-markdown-editor",
+  "name": "markdown-editor",
   "displayName": "fabriqa.ai Markdown Editor",
   "description": "Obsidian-like markdown editor with Live Preview, Source, and Reading modes",
   "version": "0.11.1",
@@ -26,10 +26,10 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/hancengiz/fabriqa.ai.markdown.editor.git"
+    "url": "https://github.com/hancengiz/fabriqa.ai-markdown-editor.git"
   },
   "bugs": {
-    "url": "https://github.com/hancengiz/fabriqa.ai.markdown.editor/issues"
+    "url": "https://github.com/hancengiz/fabriqa.ai-markdown-editor/issues"
   },
   "homepage": "https://fabriqa.ai",
   "license": "MIT",
