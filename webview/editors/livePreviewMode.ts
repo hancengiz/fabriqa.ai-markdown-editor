@@ -886,20 +886,16 @@ export const livePreviewPlugin = ViewPlugin.fromClass(
       let linkStart = linkNode.from;
       let linkEnd = linkNode.to;
 
-      // Parse link structure [text](url)
-      linkNode.node.cursor().iterate((node) => {
-        const nodeText = view.state.doc.sliceString(node.from, node.to);
+      // Get the full link text
+      const fullLinkText = view.state.doc.sliceString(linkStart, linkEnd);
 
-        switch (node.type.name) {
-          case 'LinkLabel':
-            linkText = nodeText;
-            break;
+      // Parse link structure [text](url) manually
+      const linkMatch = fullLinkText.match(/^\[([^\]]*)\]\(([^)]*)\)$/);
 
-          case 'URL':
-            linkUrl = nodeText;
-            break;
-        }
-      });
+      if (linkMatch) {
+        linkText = linkMatch[1]; // Text between [ and ]
+        linkUrl = linkMatch[2];  // URL between ( and )
+      }
 
       // Replace entire link with widget [text](url) -> clickable text
       if (linkText && linkUrl) {
