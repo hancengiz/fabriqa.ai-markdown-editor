@@ -127,6 +127,8 @@ class HorizontalRuleWidget extends WidgetType {
     const hr = document.createElement('hr');
     hr.className = 'cm-horizontal-rule';
     hr.style.cssText = `
+      display: block;
+      width: 100%;
       border: none;
       border-bottom: 2px solid ${theme.borderColor.muted};
       margin: 16px 0;
@@ -739,8 +741,7 @@ export const livePreviewPlugin = ViewPlugin.fromClass(
           if (!decoratedRanges.has(hrKey)) {
             decorations.push(
               Decoration.replace({
-                widget: new HorizontalRuleWidget(),
-                block: true
+                widget: new HorizontalRuleWidget()
               }).range(from, to)
             );
             decoratedRanges.add(hrKey);
