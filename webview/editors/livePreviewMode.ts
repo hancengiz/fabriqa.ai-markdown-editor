@@ -118,6 +118,29 @@ class ImageWidget extends WidgetType {
 }
 
 /**
+ * Widget for horizontal rules in Live Preview
+ * Renders a styled horizontal line
+ */
+class HorizontalRuleWidget extends WidgetType {
+  toDOM() {
+    const theme = getCurrentTheme();
+    const hr = document.createElement('hr');
+    hr.className = 'cm-horizontal-rule';
+    hr.style.cssText = `
+      border: none;
+      border-bottom: 2px solid ${theme.borderColor.muted};
+      margin: 16px 0;
+      opacity: 0.6;
+    `;
+    return hr;
+  }
+
+  ignoreEvent() {
+    return false;
+  }
+}
+
+/**
  * Widget for clickable checkboxes in Live Preview
  * Renders an actual HTML checkbox that can be clicked to toggle state
  */
@@ -674,6 +697,28 @@ export const livePreviewPlugin = ViewPlugin.fromClass(
             from,
             to
           );
+
+          // Apply line-level background to each line in the code block
+          // This ensures empty lines also get the background color
+          const doc = view.state.doc;
+          const startLine = doc.lineAt(from);
+          const endLine = doc.lineAt(to);
+
+          for (let lineNum = startLine.number; lineNum <= endLine.number; lineNum++) {
+            const line = doc.line(lineNum);
+            const lineKey = `code-block-line-${line.from}`;
+            if (!decoratedRanges.has(lineKey)) {
+              decorations.push(
+                Decoration.line({
+                  class: 'cm-code-block-line',
+                  attributes: {
+                    style: `background-color: ${theme.code.background};`
+                  }
+                }).range(line.from)
+              );
+              decoratedRanges.add(lineKey);
+            }
+          }
           break;
 
         case 'FencedCode':
@@ -682,22 +727,17 @@ export const livePreviewPlugin = ViewPlugin.fromClass(
           break;
 
         case 'HorizontalRule':
-          // Style horizontal rules
-          addDecoration(
-            Decoration.mark({
-              class: 'cm-horizontal-rule',
-              attributes: {
-                style: `
-                  display: block;
-                  border-bottom: 2px solid ${theme.borderColor.muted};
-                  margin: 16px 0;
-                  opacity: 0.6;
-                `
-              }
-            }),
-            from,
-            to
-          );
+          // Replace horizontal rule markdown with styled hr element
+          const hrKey = `${from}-${to}`;
+          if (!decoratedRanges.has(hrKey)) {
+            decorations.push(
+              Decoration.replace({
+                widget: new HorizontalRuleWidget(),
+                block: true
+              }).range(from, to)
+            );
+            decoratedRanges.add(hrKey);
+          }
           break;
 
         default:
@@ -731,6 +771,7 @@ export const livePreviewPlugin = ViewPlugin.fromClass(
       if (!isMermaid) {
         const rangeKey = `code-block-${codeStart}`;
         if (!decoratedRanges.has(rangeKey)) {
+          // Apply background to the entire code block range
           decorations.push(
             Decoration.mark({
               class: 'cm-code-block',
@@ -744,6 +785,28 @@ export const livePreviewPlugin = ViewPlugin.fromClass(
             }).range(codeStart, codeEnd)
           );
           decoratedRanges.add(rangeKey);
+
+          // Apply line-level background to each line in the code block
+          // This ensures empty lines also get the background color
+          const doc = view.state.doc;
+          const startLine = doc.lineAt(codeStart);
+          const endLine = doc.lineAt(codeEnd);
+
+          for (let lineNum = startLine.number; lineNum <= endLine.number; lineNum++) {
+            const line = doc.line(lineNum);
+            const lineKey = `code-block-line-${line.from}`;
+            if (!decoratedRanges.has(lineKey)) {
+              decorations.push(
+                Decoration.line({
+                  class: 'cm-code-block-line',
+                  attributes: {
+                    style: `background-color: ${theme.code.background};`
+                  }
+                }).range(line.from)
+              );
+              decoratedRanges.add(lineKey);
+            }
+          }
         }
         return;
       }
