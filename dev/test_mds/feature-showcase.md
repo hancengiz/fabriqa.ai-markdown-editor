@@ -67,9 +67,9 @@ This document demonstrates all supported markdown features in the fabriqa.ai mar
 
 ## Images
 
-![fabriqa logo](https://fabriqa.ai/logo.png)
+![Markdown Logo](https://upload.wikimedia.org/wikipedia/commons/4/48/Markdown-mark.svg)
 
-![Local image example](./assets/screenshot.png)
+![GitHub Logo](https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png)
 
 ---
 

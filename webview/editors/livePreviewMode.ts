@@ -566,6 +566,13 @@ export const livePreviewPlugin = ViewPlugin.fromClass(
           }
           break;
 
+        case 'StrikethroughMark':
+          // Hide strikethrough marks (~~)
+          if (nodeText.match(/^~~$/)) {
+            addDecoration(hiddenDecoration, from, to);
+          }
+          break;
+
         case 'Link':
           // Handle link syntax [text](url)
           this.handleLink(node, view, decorations, decoratedRanges);
