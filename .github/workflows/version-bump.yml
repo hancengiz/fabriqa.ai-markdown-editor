@@ -8,6 +8,10 @@ on:
       - '**.md'
       - '.github/**'
 
+permissions:
+  contents: write
+  packages: write
+
 jobs:
   bump-version:
     # Skip if commit message contains [skip ci]

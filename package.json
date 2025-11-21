@@ -1,5 +1,5 @@
 {
-  "name": "markdown-editor",
+  "name": "fabriqa-ai-markdown-editor",
   "displayName": "fabriqa.ai markdown editor",
   "description": "Obsidian-like markdown editor with Live Preview, Source, and Reading modes",
   "version": "0.18.5",
