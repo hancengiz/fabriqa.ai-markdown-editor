@@ -1,6 +1,6 @@
 {
   "name": "fabriqa-markdown-editor",
-  "displayName": "fabriqa markdown editor",
+  "displayName": "fabriqa - markdown editor - obsidian style",
   "description": "Obsidian-like markdown editor with Live Preview, Source, and Reading modes",
   "version": "0.2.2",
   "publisher": "fabriqaai",
