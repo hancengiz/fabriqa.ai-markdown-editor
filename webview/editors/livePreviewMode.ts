@@ -122,6 +122,7 @@ class CheckboxWidget extends WidgetType {
         top: 2px;
         left: 2px;
         pointer-events: none;
+        z-index: 10;
       `;
 
       const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
