@@ -168,6 +168,21 @@
         "command": "fabriqa.clearFind",
         "title": "Clear Find",
         "category": "fabriqa"
+      },
+      {
+        "command": "fabriqa.copyPath",
+        "title": "Copy Path",
+        "category": "fabriqa"
+      },
+      {
+        "command": "fabriqa.copyRelativePath",
+        "title": "Copy Relative Path",
+        "category": "fabriqa"
+      },
+      {
+        "command": "fabriqa.revealInOS",
+        "title": "Reveal in Finder",
+        "category": "fabriqa"
       }
     ],
     "menus": {
@@ -193,6 +208,36 @@
           "command": "fabriqa.createFile",
           "when": "view == fabriqa.markdownTree && viewItem == folder",
           "group": "navigation@1"
+        },
+        {
+          "command": "fabriqa.copyPath",
+          "when": "view == fabriqa.markdownTree && viewItem == file",
+          "group": "5_cutcopypaste@1"
+        },
+        {
+          "command": "fabriqa.copyRelativePath",
+          "when": "view == fabriqa.markdownTree && viewItem == file",
+          "group": "5_cutcopypaste@2"
+        },
+        {
+          "command": "fabriqa.copyPath",
+          "when": "view == fabriqa.markdownTree && viewItem == folder",
+          "group": "5_cutcopypaste@1"
+        },
+        {
+          "command": "fabriqa.copyRelativePath",
+          "when": "view == fabriqa.markdownTree && viewItem == folder",
+          "group": "5_cutcopypaste@2"
+        },
+        {
+          "command": "fabriqa.revealInOS",
+          "when": "view == fabriqa.markdownTree && viewItem == file",
+          "group": "7_modification@1"
+        },
+        {
+          "command": "fabriqa.revealInOS",
+          "when": "view == fabriqa.markdownTree && viewItem == folder",
+          "group": "7_modification@1"
         },
         {
           "command": "fabriqa.renameFile",

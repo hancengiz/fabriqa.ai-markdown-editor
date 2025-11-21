@@ -517,6 +517,95 @@ export function registerCommands(
     })
   );
 
+  // Copy absolute path
+  context.subscriptions.push(
+    vscode.commands.registerCommand('fabriqa.copyPath', async (treeItem?: any) => {
+      try {
+        const file = treeItem?.file;
+        const folder = treeItem?.folder;
+
+        let absolutePath: string;
+        if (file) {
+          absolutePath = file.absolutePath;
+        } else if (folder && treeItem?.resourceUri) {
+          absolutePath = treeItem.resourceUri.fsPath;
+        } else {
+          vscode.window.showErrorMessage('No file or folder selected');
+          return;
+        }
+
+        await vscode.env.clipboard.writeText(absolutePath);
+        vscode.window.showInformationMessage(`Copied path: ${absolutePath}`);
+        Logger.info(`Copied absolute path: ${absolutePath}`);
+      } catch (error) {
+        Logger.error('Failed to copy path', error);
+        vscode.window.showErrorMessage(`Failed to copy path: ${error}`);
+      }
+    })
+  );
+
+  // Copy relative path
+  context.subscriptions.push(
+    vscode.commands.registerCommand('fabriqa.copyRelativePath', async (treeItem?: any) => {
+      try {
+        const file = treeItem?.file;
+        const folder = treeItem?.folder;
+        const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+
+        if (!workspaceRoot) {
+          vscode.window.showErrorMessage('No workspace folder is open');
+          return;
+        }
+
+        let absolutePath: string;
+        if (file) {
+          absolutePath = file.absolutePath;
+        } else if (folder && treeItem?.resourceUri) {
+          absolutePath = treeItem.resourceUri.fsPath;
+        } else {
+          vscode.window.showErrorMessage('No file or folder selected');
+          return;
+        }
+
+        // Calculate relative path from workspace root
+        const relativePath = path.relative(workspaceRoot, absolutePath);
+
+        await vscode.env.clipboard.writeText(relativePath);
+        vscode.window.showInformationMessage(`Copied relative path: ${relativePath}`);
+        Logger.info(`Copied relative path: ${relativePath}`);
+      } catch (error) {
+        Logger.error('Failed to copy relative path', error);
+        vscode.window.showErrorMessage(`Failed to copy relative path: ${error}`);
+      }
+    })
+  );
+
+  // Reveal in OS (Finder on macOS, Explorer on Windows/Linux)
+  context.subscriptions.push(
+    vscode.commands.registerCommand('fabriqa.revealInOS', async (treeItem?: any) => {
+      try {
+        const file = treeItem?.file;
+        const folder = treeItem?.folder;
+
+        let absolutePath: string;
+        if (file) {
+          absolutePath = file.absolutePath;
+        } else if (folder && treeItem?.resourceUri) {
+          absolutePath = treeItem.resourceUri.fsPath;
+        } else {
+          vscode.window.showErrorMessage('No file or folder selected');
+          return;
+        }
+
+        const uri = vscode.Uri.file(absolutePath);
+        await vscode.commands.executeCommand('revealFileInOS', uri);
+        Logger.info(`Revealed in OS: ${absolutePath}`);
+      } catch (error) {
+        Logger.error('Failed to reveal in OS', error);
+        vscode.window.showErrorMessage(`Failed to reveal in OS: ${error}`);
+      }
+    })
+  );
 
 }
 
