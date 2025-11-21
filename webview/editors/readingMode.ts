@@ -1351,7 +1351,7 @@ export const readingModePlugin = ViewPlugin.fromClass(
 
     /**
      * Add icons to GitHub alert titles
-     * Adds appropriate emoji icons to [!NOTE], [!TIP], [!WARNING], [!IMPORTANT], [!CAUTION]
+     * Replaces [!NOTE], [!TIP], [!WARNING], [!IMPORTANT], [!CAUTION] with appropriate emoji icons
      */
     addGitHubAlertIcons() {
       if (!this.htmlContainer) return;
@@ -1380,25 +1380,34 @@ export const readingModePlugin = ViewPlugin.fromClass(
 
         if (!alertType || !alertIcons[alertType]) return;
 
-        // Find the title element
-        const title = alert.querySelector('.markdown-alert-title');
-        if (!title) return;
+        // Find all text nodes in the alert and replace [!TYPE] with icon
+        const walker = document.createTreeWalker(
+          alert,
+          NodeFilter.SHOW_TEXT,
+          null
+        );
 
-        // Check if icon already exists (to avoid duplicates)
-        const existingIcon = title.querySelector('.alert-icon');
-        if (existingIcon) return;
+        const nodesToReplace: { node: Text; replacement: string }[] = [];
+        let currentNode: Node | null;
 
-        // Create icon span
-        const icon = document.createElement('span');
-        icon.className = 'alert-icon';
-        icon.textContent = alertIcons[alertType];
-        icon.style.cssText = `
-          margin-right: 8px;
-          font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
-        `;
+        while ((currentNode = walker.nextNode())) {
+          const textNode = currentNode as Text;
+          const text = textNode.textContent || '';
 
-        // Insert icon at the beginning of the title
-        title.insertBefore(icon, title.firstChild);
+          // Match [!NOTE], [!TIP], etc. (case insensitive)
+          const alertPattern = new RegExp(`\\[!(${alertType})\\]`, 'i');
+          if (alertPattern.test(text)) {
+            nodesToReplace.push({
+              node: textNode,
+              replacement: text.replace(alertPattern, alertIcons[alertType])
+            });
+          }
+        }
+
+        // Replace the text nodes
+        nodesToReplace.forEach(({ node, replacement }) => {
+          node.textContent = replacement;
+        });
       });
     }
 

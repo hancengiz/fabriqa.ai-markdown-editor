@@ -1149,16 +1149,25 @@ export const livePreviewPlugin = ViewPlugin.fromClass(
           to
         );
 
-        // Add icon widget at the start of the alert
-        const iconKey = `alert-icon-${from}`;
-        if (!decoratedRanges.has(iconKey)) {
-          decorations.push(
-            Decoration.widget({
-              widget: new AlertIconWidget(alertIcons[alertType]),
-              side: 1  // Place after the > character
-            }).range(from)
-          );
-          decoratedRanges.add(iconKey);
+        // Find and replace [!TYPE] with icon widget
+        // The match gives us the full matched string including > and whitespace
+        const alertTagPattern = `[!${alertType.toUpperCase()}]`;
+        const alertTagIndex = blockquoteText.indexOf(alertTagPattern);
+
+        if (alertTagIndex !== -1) {
+          const alertTagStart = from + alertTagIndex;
+          const alertTagEnd = alertTagStart + alertTagPattern.length;
+
+          const iconKey = `alert-icon-${alertTagStart}`;
+          if (!decoratedRanges.has(iconKey)) {
+            // Replace the [!TYPE] text with the icon widget
+            decorations.push(
+              Decoration.replace({
+                widget: new AlertIconWidget(alertIcons[alertType])
+              }).range(alertTagStart, alertTagEnd)
+            );
+            decoratedRanges.add(iconKey);
+          }
         }
       } else if (!cursorInside) {
         // Regular blockquote styling (only if cursor is outside)
