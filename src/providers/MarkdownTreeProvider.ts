@@ -41,6 +41,31 @@ export class MarkdownTreeItem extends vscode.TreeItem {
     } else if (itemType === 'folder') {
       this.iconPath = new vscode.ThemeIcon('folder');
       this.tooltip = folderNode?.path || label;
+
+      // Set resourceUri for folder to enable VS Code commands (reveal, copy path, etc.)
+      if (folderNode) {
+        // Try to get the first file in this folder
+        let firstFile = folderNode.files[0];
+
+        // If no direct files, search subfolders recursively
+        if (!firstFile) {
+          firstFile = this.findFirstFileInFolder(folderNode);
+        }
+
+        // Derive folder's absolute path from the first file
+        if (firstFile) {
+          // Get the folder's relative path depth
+          const folderDepth = folderNode.path.split(path.sep).length;
+          // Go up from the file's absolute path to reach the folder
+          let folderAbsolutePath = firstFile.absolutePath;
+          for (let i = 0; i <= folderDepth; i++) {
+            folderAbsolutePath = path.dirname(folderAbsolutePath);
+          }
+          // Add the folder's relative path back
+          folderAbsolutePath = path.join(folderAbsolutePath, folderNode.path);
+          this.resourceUri = vscode.Uri.file(folderAbsolutePath);
+        }
+      }
     } else if (itemType === 'file') {
       this.iconPath = new vscode.ThemeIcon('markdown');
       this.tooltip = file?.relativePath;
@@ -66,6 +91,26 @@ export class MarkdownTreeItem extends vscode.TreeItem {
     } else if (itemType === 'description') {
       this.iconPath = new vscode.ThemeIcon('info');
     }
+  }
+
+  /**
+   * Recursively find the first file in a folder or its subfolders
+   */
+  private findFirstFileInFolder(folder: FolderNode): ResolvedFile | undefined {
+    // Check files in this folder first
+    if (folder.files.length > 0) {
+      return folder.files[0];
+    }
+
+    // Recursively search subfolders
+    for (const [, subfolder] of folder.subfolders) {
+      const file = this.findFirstFileInFolder(subfolder);
+      if (file) {
+        return file;
+      }
+    }
+
+    return undefined;
   }
 }
 
