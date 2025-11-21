@@ -388,6 +388,14 @@ function getThemeExtensions(): any[] {
       '.ͼ6, .ͼ4, .ͼr': {
         textDecoration: 'none !important',
         borderBottom: 'none !important'
+      },
+      // Make blockquote background extend full line width
+      '.cm-line:has(.cm-blockquote)': {
+        backgroundColor: theme.blockquote.background
+      },
+      // Make code block background extend full line width
+      '.cm-line:has(.cm-code-block)': {
+        backgroundColor: theme.code.background
       }
     })
   ];
