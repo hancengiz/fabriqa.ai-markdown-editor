@@ -203,46 +203,6 @@
           "command": "fabriqa.deleteFile",
           "when": "view == fabriqa.markdownTree && viewItem == file",
           "group": "2_workspace@2"
-        },
-        {
-          "command": "filesExplorer.copy",
-          "when": "view == fabriqa.markdownTree && viewItem == file",
-          "group": "5_cutcopypaste@1"
-        },
-        {
-          "command": "filesExplorer.paste",
-          "when": "view == fabriqa.markdownTree && viewItem == file",
-          "group": "5_cutcopypaste@2"
-        },
-        {
-          "command": "copyFilePath",
-          "when": "view == fabriqa.markdownTree && viewItem == file",
-          "group": "6_copypath@1"
-        },
-        {
-          "command": "copyRelativeFilePath",
-          "when": "view == fabriqa.markdownTree && viewItem == file",
-          "group": "6_copypath@2"
-        },
-        {
-          "command": "revealFileInOS",
-          "when": "view == fabriqa.markdownTree && viewItem == file",
-          "group": "7_reveal@1"
-        },
-        {
-          "command": "revealInExplorer",
-          "when": "view == fabriqa.markdownTree && viewItem == file",
-          "group": "7_reveal@2"
-        },
-        {
-          "command": "revealFileInOS",
-          "when": "view == fabriqa.markdownTree && viewItem == folder",
-          "group": "7_reveal@1"
-        },
-        {
-          "command": "revealInExplorer",
-          "when": "view == fabriqa.markdownTree && viewItem == folder",
-          "group": "7_reveal@2"
         }
       ],
       "editor/title": [
