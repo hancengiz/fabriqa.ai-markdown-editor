@@ -3,6 +3,7 @@ import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import mermaid from 'mermaid';
 import { getCurrentTheme } from '../themes';
+import { emojify } from 'node-emoji';
 
 /**
  * Reading Mode Plugin
@@ -72,8 +73,11 @@ export const readingModePlugin = ViewPlugin.fromClass(
       const theme = getCurrentTheme();
 
       try {
+        // Replace emoji shortcodes (e.g., :smile: → 😄)
+        const markdownWithEmojis = emojify(markdown);
+
         // Convert markdown to HTML
-        const rawHtml = marked.parse(markdown) as string;
+        const rawHtml = marked.parse(markdownWithEmojis) as string;
 
         // Sanitize HTML to prevent XSS (allow input for checkboxes)
         const cleanHtml = DOMPurify.sanitize(rawHtml, {

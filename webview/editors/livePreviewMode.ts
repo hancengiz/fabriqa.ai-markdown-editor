@@ -4,6 +4,7 @@ import { Range } from '@codemirror/state';
 import { SyntaxNode } from '@lezer/common';
 import { MermaidDiagramWidget } from '../lib/mermaid-widget';
 import { getCurrentTheme } from '../themes';
+import { get as getEmoji } from 'node-emoji';
 
 // Decoration for hiding markdown syntax markers
 // Uses Decoration.mark() with CSS class instead of Decoration.replace()
@@ -135,6 +136,30 @@ class HorizontalRuleWidget extends WidgetType {
       opacity: 0.6;
     `;
     return hr;
+  }
+
+  ignoreEvent() {
+    return false;
+  }
+}
+
+/**
+ * Widget for emoji shortcodes in Live Preview
+ * Renders :emoji_name: as actual emoji character
+ */
+class EmojiWidget extends WidgetType {
+  constructor(readonly emoji: string) {
+    super();
+  }
+
+  toDOM() {
+    const span = document.createElement('span');
+    span.textContent = this.emoji;
+    span.className = 'cm-emoji';
+    span.style.cssText = `
+      font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    `;
+    return span;
   }
 
   ignoreEvent() {
@@ -335,6 +360,9 @@ export const livePreviewPlugin = ViewPlugin.fromClass(
       // (e.g., checkboxes without list markers: "[ ] todo")
       this.addCustomCheckboxDecorations(view, decorations, activeStructure, cursorPos);
 
+      // Add emoji shortcode decorations
+      this.addEmojiDecorations(view, decorations, decoratedRanges);
+
       return Decoration.set(decorations, true);
     }
 
@@ -391,6 +419,45 @@ export const livePreviewPlugin = ViewPlugin.fromClass(
                 widget: new CheckboxWidget(isChecked, view, checkboxStart)
               }).range(checkboxStart, checkboxEnd)
             );
+          }
+        }
+      }
+    }
+
+    /**
+     * Add emoji shortcode decorations
+     * Replaces :emoji_name: with actual emoji characters
+     */
+    addEmojiDecorations(
+      view: EditorView,
+      decorations: Range<Decoration>[],
+      decoratedRanges: Set<string>
+    ): void {
+      const doc = view.state.doc;
+      const text = doc.toString();
+
+      // Regular expression to match emoji shortcodes like :smile:, :heart:, etc.
+      // Match :word: pattern where word contains only letters, numbers, underscores, hyphens, and plus signs
+      const emojiRegex = /:([a-zA-Z0-9_+-]+):/g;
+      let match;
+
+      while ((match = emojiRegex.exec(text)) !== null) {
+        const shortcode = match[1]; // e.g., "smile" from ":smile:"
+        const emoji = getEmoji(shortcode);
+
+        // Only create decoration if we found a valid emoji
+        if (emoji) {
+          const from = match.index;
+          const to = match.index + match[0].length;
+          const rangeKey = `emoji-${from}-${to}`;
+
+          if (!decoratedRanges.has(rangeKey)) {
+            decorations.push(
+              Decoration.replace({
+                widget: new EmojiWidget(emoji)
+              }).range(from, to)
+            );
+            decoratedRanges.add(rangeKey);
           }
         }
       }
