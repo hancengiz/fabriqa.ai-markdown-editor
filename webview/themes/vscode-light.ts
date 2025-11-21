@@ -89,5 +89,34 @@ export const vscodeLightTheme: ThemeInfo = {
     focus: {
       outline: '#0969da',
     },
+
+    // GitHub Alerts/Admonitions (GitHub-flavored markdown)
+    alert: {
+      note: {
+        background: '#ddf4ff',
+        border: '#0969da',
+        icon: '#0969da',
+      },
+      tip: {
+        background: '#dafbe1',
+        border: '#1a7f37',
+        icon: '#1a7f37',
+      },
+      important: {
+        background: '#f6e3ff',
+        border: '#8250df',
+        icon: '#8250df',
+      },
+      warning: {
+        background: '#fff8c5',
+        border: '#9a6700',
+        icon: '#9a6700',
+      },
+      caution: {
+        background: '#ffebe9',
+        border: '#d1242f',
+        icon: '#d1242f',
+      },
+    },
   },
 };

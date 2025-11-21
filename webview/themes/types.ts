@@ -82,6 +82,15 @@ export interface Theme {
   focus: {
     outline: string;
   };
+
+  // GitHub Alert/Admonition colors
+  alert: {
+    note: { background: string; border: string; icon: string };
+    tip: { background: string; border: string; icon: string };
+    important: { background: string; border: string; icon: string };
+    warning: { background: string; border: string; icon: string };
+    caution: { background: string; border: string; icon: string };
+  };
 }
 
 /**

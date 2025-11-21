@@ -64,6 +64,60 @@ class LinkWidget extends WidgetType {
 }
 
 /**
+ * Widget for rendering images in Live Preview
+ * Displays images inline with alt text fallback
+ */
+class ImageWidget extends WidgetType {
+  constructor(readonly url: string, readonly alt: string) {
+    super();
+  }
+
+  toDOM() {
+    const wrapper = document.createElement('span');
+    wrapper.className = 'cm-image-wrapper';
+    wrapper.style.cssText = `
+      display: inline-block;
+      max-width: 100%;
+      margin: 8px 0;
+    `;
+
+    const img = document.createElement('img');
+    img.src = this.url;
+    img.alt = this.alt;
+    img.title = this.alt;
+    img.style.cssText = `
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+      display: block;
+    `;
+
+    // Handle image load error
+    img.onerror = () => {
+      const errorSpan = document.createElement('span');
+      errorSpan.textContent = `[Image not found: ${this.alt}]`;
+      errorSpan.style.cssText = `
+        color: #d1242f;
+        font-style: italic;
+        padding: 4px 8px;
+        background-color: #ffebe9;
+        border-radius: 4px;
+        display: inline-block;
+      `;
+      wrapper.innerHTML = '';
+      wrapper.appendChild(errorSpan);
+    };
+
+    wrapper.appendChild(img);
+    return wrapper;
+  }
+
+  ignoreEvent() {
+    return false;
+  }
+}
+
+/**
  * Widget for clickable checkboxes in Live Preview
  * Renders an actual HTML checkbox that can be clicked to toggle state
  */
@@ -494,6 +548,11 @@ export const livePreviewPlugin = ViewPlugin.fromClass(
           this.handleLink(node, view, decorations, decoratedRanges);
           break;
 
+        case 'Image':
+          // Handle image syntax ![alt](url)
+          this.handleImage(node, view, decorations, decoratedRanges);
+          break;
+
         case 'CodeMark':
           // Hide inline code marks (`)
           addDecoration(hiddenDecoration, from, to);
@@ -550,23 +609,8 @@ export const livePreviewPlugin = ViewPlugin.fromClass(
           break;
 
         case 'Blockquote':
-          // Add light gray background to blockquotes
-          addDecoration(
-            Decoration.mark({
-              class: 'cm-blockquote',
-              attributes: {
-                style: `
-                  background-color: ${theme.blockquote.background};
-                  color: ${theme.blockquote.text};
-                  padding: 2px 0;
-                  border-left: 4px solid ${theme.blockquote.border};
-                  padding-left: 1em;
-                `
-              }
-            }),
-            from,
-            to
-          );
+          // Check if this is a GitHub alert (> [!NOTE], > [!TIP], etc.)
+          this.handleBlockquoteOrAlert(node, view, decorations, decoratedRanges, addDecoration);
           break;
 
         case 'ListMark':
@@ -635,6 +679,25 @@ export const livePreviewPlugin = ViewPlugin.fromClass(
         case 'FencedCode':
           // Handle Mermaid diagrams in code blocks
           this.handleMermaidDiagram(node, view, decorations, decoratedRanges);
+          break;
+
+        case 'HorizontalRule':
+          // Style horizontal rules
+          addDecoration(
+            Decoration.mark({
+              class: 'cm-horizontal-rule',
+              attributes: {
+                style: `
+                  display: block;
+                  border-bottom: 2px solid ${theme.borderColor.muted};
+                  margin: 16px 0;
+                  opacity: 0.6;
+                `
+              }
+            }),
+            from,
+            to
+          );
           break;
 
         default:
@@ -778,6 +841,108 @@ export const livePreviewPlugin = ViewPlugin.fromClass(
           );
           decoratedRanges.add(rangeKey);
         }
+      }
+    }
+
+    /**
+     * Handle image syntax ![alt](url)
+     * Renders images inline in live preview
+     */
+    handleImage(imageNode: SyntaxNode, view: EditorView, decorations: Range<Decoration>[], decoratedRanges: Set<string>): void {
+      let altText = '';
+      let imageUrl = '';
+      let imageStart = imageNode.from;
+      let imageEnd = imageNode.to;
+
+      // Parse image structure ![alt](url)
+      imageNode.node.cursor().iterate((node) => {
+        const nodeText = view.state.doc.sliceString(node.from, node.to);
+
+        switch (node.type.name) {
+          case 'LinkLabel':
+            altText = nodeText;
+            break;
+
+          case 'URL':
+            imageUrl = nodeText;
+            break;
+        }
+      });
+
+      // Replace entire image markdown with widget
+      if (imageUrl) {
+        const rangeKey = `${imageStart}-${imageEnd}`;
+        if (!decoratedRanges.has(rangeKey)) {
+          decorations.push(
+            Decoration.replace({
+              widget: new ImageWidget(imageUrl, altText || 'Image')
+            }).range(imageStart, imageEnd)
+          );
+          decoratedRanges.add(rangeKey);
+        }
+      }
+    }
+
+    /**
+     * Handle blockquotes and GitHub alerts
+     * Detects GitHub alert syntax: > [!NOTE], > [!TIP], etc.
+     */
+    handleBlockquoteOrAlert(
+      blockquoteNode: SyntaxNode,
+      view: EditorView,
+      decorations: Range<Decoration>[],
+      decoratedRanges: Set<string>,
+      addDecoration: (decoration: Decoration, from: number, to: number) => void
+    ): void {
+      const theme = getCurrentTheme();
+      const from = blockquoteNode.from;
+      const to = blockquoteNode.to;
+      const blockquoteText = view.state.doc.sliceString(from, to);
+
+      // Check for GitHub alert syntax: [!NOTE], [!TIP], [!IMPORTANT], [!WARNING], [!CAUTION]
+      const alertMatch = blockquoteText.match(/^\s*>\s*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]/i);
+
+      if (alertMatch) {
+        const alertType = alertMatch[1].toLowerCase() as 'note' | 'tip' | 'important' | 'warning' | 'caution';
+        const alertColors = theme.alert[alertType];
+
+        // Apply GitHub alert styling
+        addDecoration(
+          Decoration.mark({
+            class: `cm-alert cm-alert-${alertType}`,
+            attributes: {
+              style: `
+                background-color: ${alertColors.background};
+                border-left: 4px solid ${alertColors.border};
+                padding: 8px 12px;
+                padding-left: 1em;
+                border-radius: 4px;
+                margin: 8px 0;
+                display: block;
+              `
+            }
+          }),
+          from,
+          to
+        );
+      } else {
+        // Regular blockquote styling
+        addDecoration(
+          Decoration.mark({
+            class: 'cm-blockquote',
+            attributes: {
+              style: `
+                background-color: ${theme.blockquote.background};
+                color: ${theme.blockquote.text};
+                padding: 2px 0;
+                border-left: 4px solid ${theme.blockquote.border};
+                padding-left: 1em;
+              `
+            }
+          }),
+          from,
+          to
+        );
       }
     }
   },
