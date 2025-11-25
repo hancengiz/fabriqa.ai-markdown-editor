@@ -1,6 +1,7 @@
 import { EditorView } from '@codemirror/view';
 import { EditorState, Compartment } from '@codemirror/state';
 import { markdown } from '@codemirror/lang-markdown';
+import { GFM } from '@lezer/markdown';
 import { syntaxHighlighting, defaultHighlightStyle, HighlightStyle, syntaxHighlighting as syntaxHighlightingFacet2 } from '@codemirror/language';
 import { tags } from '@lezer/highlight';
 import { keymap, highlightSpecialChars, drawSelection, highlightActiveLine, dropCursor, rectangularSelection, crosshairCursor, lineNumbers, highlightActiveLineGutter } from '@codemirror/view';
@@ -252,7 +253,7 @@ function initializeEditor(): void {
       doc: '',
       extensions: [
         ...basicExtensions,
-        markdown(),
+        markdown({ extensions: [GFM] }), // Enable GFM (GitHub Flavored Markdown) including tables
         markdownHidingStyles, // CSS for hiding markdown syntax
         modeCompartment.of(getModeExtensions(initialMode)),
         getThemeExtensions(),

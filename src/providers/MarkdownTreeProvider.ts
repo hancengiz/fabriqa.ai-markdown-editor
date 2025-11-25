@@ -45,7 +45,7 @@ export class MarkdownTreeItem extends vscode.TreeItem {
       // Set resourceUri for folder to enable VS Code commands (reveal, copy path, etc.)
       if (folderNode) {
         // Try to get the first file in this folder
-        let firstFile = folderNode.files[0];
+        let firstFile: ResolvedFile | undefined = folderNode.files[0];
 
         // If no direct files, search subfolders recursively
         if (!firstFile) {

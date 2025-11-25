@@ -687,6 +687,8 @@ export function insertTableColumnLeft(view: EditorView): boolean {
   const { rows, currentCol, startLine } = tableInfo;
   const doc = view.state.doc;
 
+  // Collect all changes first, then dispatch them together
+  const changes = [];
   for (let i = 0; i < rows.length; i++) {
     const line = doc.line(startLine + i);
     const cells = parseTableRow(line.text);
@@ -700,14 +702,15 @@ export function insertTableColumnLeft(view: EditorView): boolean {
 
     const newRow = formatTableRow(cells);
 
-    view.dispatch({
-      changes: {
-        from: line.from,
-        to: line.to,
-        insert: newRow
-      }
+    changes.push({
+      from: line.from,
+      to: line.to,
+      insert: newRow
     });
   }
+
+  // Dispatch all changes at once
+  view.dispatch({ changes });
 
   return true;
 }
@@ -724,6 +727,8 @@ export function insertTableColumnRight(view: EditorView): boolean {
   const { rows, currentCol, startLine } = tableInfo;
   const doc = view.state.doc;
 
+  // Collect all changes first, then dispatch them together
+  const changes = [];
   for (let i = 0; i < rows.length; i++) {
     const line = doc.line(startLine + i);
     const cells = parseTableRow(line.text);
@@ -737,14 +742,15 @@ export function insertTableColumnRight(view: EditorView): boolean {
 
     const newRow = formatTableRow(cells);
 
-    view.dispatch({
-      changes: {
-        from: line.from,
-        to: line.to,
-        insert: newRow
-      }
+    changes.push({
+      from: line.from,
+      to: line.to,
+      insert: newRow
     });
   }
+
+  // Dispatch all changes at once
+  view.dispatch({ changes });
 
   return true;
 }
@@ -766,6 +772,8 @@ export function deleteTableColumn(view: EditorView): boolean {
     return false;
   }
 
+  // Collect all changes first, then dispatch them together
+  const changes = [];
   for (let i = 0; i < rows.length; i++) {
     const line = doc.line(startLine + i);
     const cells = parseTableRow(line.text);
@@ -774,14 +782,15 @@ export function deleteTableColumn(view: EditorView): boolean {
 
     const newRow = formatTableRow(cells);
 
-    view.dispatch({
-      changes: {
-        from: line.from,
-        to: line.to,
-        insert: newRow
-      }
+    changes.push({
+      from: line.from,
+      to: line.to,
+      insert: newRow
     });
   }
+
+  // Dispatch all changes at once
+  view.dispatch({ changes });
 
   return true;
 }
