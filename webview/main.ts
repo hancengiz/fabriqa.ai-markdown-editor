@@ -116,8 +116,14 @@ const basicExtensions = [
     { key: 'Mod-Shift-ArrowDown', run: insertTableRowBelow },
     { key: 'Mod-Shift-ArrowLeft', run: insertTableColumnLeft },
     { key: 'Mod-Shift-ArrowRight', run: insertTableColumnRight },
-    { key: 'Mod-Shift-Backspace', run: deleteTableRow },
-    { key: 'Mod-Shift-Delete', run: deleteTableColumn },
+    // Delete table row/column shortcuts
+    // Note: On Mac, "Backspace" is the Delete key above Return
+    //       "Delete" is Fn+Delete (forward delete)
+    { key: 'Mod-Shift-Backspace', run: deleteTableColumn }, // Delete column
+    { key: 'Mod-Shift-Delete', run: deleteTableRow }, // Delete row (Fn+Delete on Mac)
+    // Alternative shortcuts using regular letter keys (more accessible on Mac)
+    { key: 'Mod-Alt-Backspace', run: deleteTableRow }, // Alternative: Cmd+Alt+Delete for row
+    { key: 'Mod-Alt-d', run: deleteTableColumn }, // Alternative: Cmd+Alt+D for column
     { key: 'Mod-Alt-f', run: formatTable }, // Format table
     // Default keymaps
     ...closeBracketsKeymap,

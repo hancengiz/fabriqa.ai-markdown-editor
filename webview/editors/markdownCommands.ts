@@ -379,10 +379,14 @@ function getTableInfo(view: EditorView): TableInfo | null {
   const currentRow = currentLineNum - startLine;
 
   // Calculate current column by counting pipes before cursor
+  // This gives us a 1-based pipe count (1 = after first pipe, 2 = after second pipe, etc.)
+  // We need to subtract 1 to get 0-based cell index for array operations
   const lineStart = currentLine.from;
   const posInLine = selection.from - lineStart;
   const textBeforeCursor = currentLine.text.substring(0, posInLine);
-  const currentCol = (textBeforeCursor.match(/\|/g) || []).length;
+  const pipeCount = (textBeforeCursor.match(/\|/g) || []).length;
+  // Convert pipe count to cell index: pipe 1 = cell 0, pipe 2 = cell 1, etc.
+  const currentCol = Math.max(0, pipeCount - 1);
 
   // Count total columns (from first row)
   const colCount = (rows[0].match(/\|/g) || []).length - 1;
@@ -608,6 +612,9 @@ export function insertTableRowAbove(view: EditorView): boolean {
     }
   });
 
+  // Auto-format table after modification
+  formatTable(view);
+
   return true;
 }
 
@@ -634,6 +641,9 @@ export function insertTableRowBelow(view: EditorView): boolean {
       insert: '\n' + newRow
     }
   });
+
+  // Auto-format table after modification
+  formatTable(view);
 
   return true;
 }
@@ -671,6 +681,9 @@ export function deleteTableRow(view: EditorView): boolean {
       insert: ''
     }
   });
+
+  // Auto-format table after modification
+  formatTable(view);
 
   return true;
 }
@@ -712,6 +725,9 @@ export function insertTableColumnLeft(view: EditorView): boolean {
   // Dispatch all changes at once
   view.dispatch({ changes });
 
+  // Auto-format table after modification
+  formatTable(view);
+
   return true;
 }
 
@@ -752,6 +768,9 @@ export function insertTableColumnRight(view: EditorView): boolean {
   // Dispatch all changes at once
   view.dispatch({ changes });
 
+  // Auto-format table after modification
+  formatTable(view);
+
   return true;
 }
 
@@ -791,6 +810,9 @@ export function deleteTableColumn(view: EditorView): boolean {
 
   // Dispatch all changes at once
   view.dispatch({ changes });
+
+  // Auto-format table after modification
+  formatTable(view);
 
   return true;
 }
