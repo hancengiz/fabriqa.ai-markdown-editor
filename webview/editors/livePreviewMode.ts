@@ -425,12 +425,12 @@ class TableWidget extends WidgetType {
 
     // Parse alignment row
     const alignmentLine = lines[1];
-    const alignments = alignmentLine.split('|').map(cell => {
-      const trimmed = cell.trim();
-      if (trimmed.startsWith(':') && trimmed.endsWith(':')) return 'center';
-      if (trimmed.endsWith(':')) return 'right';
+    const alignmentCells = alignmentLine.split('|').map(cell => cell.trim()).filter(cell => cell);
+    const alignments = alignmentCells.map(cell => {
+      if (cell.startsWith(':') && cell.endsWith(':')) return 'center';
+      if (cell.endsWith(':')) return 'right';
       return 'left';
-    }).filter((_, i) => i < headers.length);
+    });
 
     // Parse data rows
     const rows: string[][] = [];
