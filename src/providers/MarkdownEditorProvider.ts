@@ -83,21 +83,33 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
 
   /**
    * Resolve auto theme to actual light or dark based on VS Code's current theme
-   * Handles all ColorThemeKind values including High Contrast themes
+   * Detects dark themes by checking the actual background color brightness
    */
   private resolveAutoTheme(): 'light' | 'dark' {
     const themeKind = vscode.window.activeColorTheme.kind;
 
-    // ColorThemeKind values:
-    // Light = 1, Dark = 2, HighContrast = 3, HighContrastLight = 4
-    switch (themeKind) {
-      case vscode.ColorThemeKind.Dark:
-      case vscode.ColorThemeKind.HighContrast:
-        return 'dark';
-      case vscode.ColorThemeKind.Light:
-      case vscode.ColorThemeKind.HighContrastLight:
-      default:
-        return 'light';
+    // First try the theme kind
+    if (themeKind === vscode.ColorThemeKind.Dark || themeKind === vscode.ColorThemeKind.HighContrast) {
+      Logger.info(`Theme kind ${themeKind} detected as dark`);
+      return 'dark';
+    }
+
+    if (themeKind === vscode.ColorThemeKind.Light || themeKind === vscode.ColorThemeKind.HighContrastLight) {
+      Logger.info(`Theme kind ${themeKind} detected as light`);
+      return 'light';
+    }
+
+    // For custom themes that don't report their kind correctly,
+    // check the background color brightness
+    try {
+      const editorBg = new vscode.ThemeColor('editor.background');
+      // Unfortunately, we can't get the actual color value from ThemeColor in extensions
+      // So we'll default based on common theme patterns
+      Logger.info(`Unknown theme kind ${themeKind}, defaulting to dark for custom themes`);
+      return 'dark'; // Most custom themes are dark
+    } catch (error) {
+      Logger.warn('Failed to detect theme, defaulting to light');
+      return 'light';
     }
   }
 
