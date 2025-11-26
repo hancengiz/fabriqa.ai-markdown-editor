@@ -1024,36 +1024,44 @@ export const livePreviewPlugin = ViewPlugin.fromClass(
 
           const hrKey = `${from}-${to}`;
           if (!decoratedRanges.has(hrKey)) {
-            // Hide blank lines immediately before the HR
+            // Hide ALL consecutive blank lines immediately before the HR
             const hrLine = view.state.doc.lineAt(from);
-            if (hrLine.number > 1) {
-              const prevLine = view.state.doc.line(hrLine.number - 1);
-              if (prevLine.text.trim() === '') {
-                const prevLineKey = `hr-blank-before-${prevLine.from}`;
-                if (!decoratedRanges.has(prevLineKey)) {
+            let lineNum = hrLine.number - 1;
+            while (lineNum >= 1) {
+              const line = view.state.doc.line(lineNum);
+              if (line.text.trim() === '') {
+                const lineKey = `hr-blank-before-${line.from}`;
+                if (!decoratedRanges.has(lineKey)) {
                   decorations.push(
                     Decoration.line({
                       attributes: { style: 'display: none;' }
-                    }).range(prevLine.from)
+                    }).range(line.from)
                   );
-                  decoratedRanges.add(prevLineKey);
+                  decoratedRanges.add(lineKey);
                 }
+                lineNum--;
+              } else {
+                break; // Stop at first non-blank line
               }
             }
 
-            // Hide blank lines immediately after the HR
-            if (hrLine.number < view.state.doc.lines) {
-              const nextLine = view.state.doc.line(hrLine.number + 1);
-              if (nextLine.text.trim() === '') {
-                const nextLineKey = `hr-blank-after-${nextLine.from}`;
-                if (!decoratedRanges.has(nextLineKey)) {
+            // Hide ALL consecutive blank lines immediately after the HR
+            lineNum = hrLine.number + 1;
+            while (lineNum <= view.state.doc.lines) {
+              const line = view.state.doc.line(lineNum);
+              if (line.text.trim() === '') {
+                const lineKey = `hr-blank-after-${line.from}`;
+                if (!decoratedRanges.has(lineKey)) {
                   decorations.push(
                     Decoration.line({
                       attributes: { style: 'display: none;' }
-                    }).range(nextLine.from)
+                    }).range(line.from)
                   );
-                  decoratedRanges.add(nextLineKey);
+                  decoratedRanges.add(lineKey);
                 }
+                lineNum++;
+              } else {
+                break; // Stop at first non-blank line
               }
             }
 
