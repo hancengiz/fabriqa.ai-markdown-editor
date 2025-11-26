@@ -1050,6 +1050,24 @@ function applyZoom(): void {
 }
 
 /**
+ * Get computed color value from CSS (resolves CSS variables to actual colors)
+ */
+function getComputedColor(colorValue: string): string {
+  // If it's a CSS variable, compute it
+  if (colorValue.startsWith('var(')) {
+    // Create a temporary element to compute the color
+    const tempEl = document.createElement('div');
+    tempEl.style.color = colorValue;
+    document.body.appendChild(tempEl);
+    const computed = window.getComputedStyle(tempEl).color;
+    document.body.removeChild(tempEl);
+    return computed;
+  }
+  // Otherwise return as-is
+  return colorValue;
+}
+
+/**
  * Context menu handlers for "Open in Browser" feature
  */
 function setupContextMenu(): void {
@@ -1081,10 +1099,23 @@ function setupContextMenu(): void {
         // Get current markdown content
         const markdown = editorView?.state.doc.toString() || '';
 
+        // Get actual computed theme colors
+        const theme = getCurrentTheme();
+        const themeColors = {
+          bgColor: {
+            default: getComputedColor(theme.bgColor.default),
+            muted: getComputedColor(theme.bgColor.muted)
+          },
+          fgColor: {
+            default: getComputedColor(theme.fgColor.default)
+          }
+        };
+
         // Send message to VS Code to open in browser
         sendMessage({
           type: 'openInBrowser',
-          markdown: markdown
+          markdown: markdown,
+          themeColors: themeColors
         });
       }
 

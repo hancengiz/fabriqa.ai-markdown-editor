@@ -82,6 +82,35 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
   }
 
   /**
+   * Check if a color is dark by calculating its perceived brightness
+   */
+  private isColorDark(color: string): boolean {
+    // Handle RGB/RGBA colors
+    const rgbMatch = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+    if (rgbMatch) {
+      const r = parseInt(rgbMatch[1]);
+      const g = parseInt(rgbMatch[2]);
+      const b = parseInt(rgbMatch[3]);
+      // Calculate perceived brightness using the formula
+      const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+      return brightness < 128;
+    }
+
+    // Handle hex colors
+    const hexMatch = color.match(/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i);
+    if (hexMatch) {
+      const r = parseInt(hexMatch[1], 16);
+      const g = parseInt(hexMatch[2], 16);
+      const b = parseInt(hexMatch[3], 16);
+      const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+      return brightness < 128;
+    }
+
+    // Default to dark for unknown formats
+    return true;
+  }
+
+  /**
    * Resolve auto theme to actual light or dark based on VS Code's current theme
    * Detects dark themes by checking the actual background color brightness
    */
@@ -289,7 +318,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
 
       case 'openInBrowser':
         // Generate HTML and open in default browser
-        await this.openInBrowser(message.markdown, document);
+        await this.openInBrowser(message.markdown, document, message.themeColors);
         break;
 
       default:
@@ -332,7 +361,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
   /**
    * Open markdown content in default browser as HTML
    */
-  private async openInBrowser(markdown: string, document: vscode.TextDocument): Promise<void> {
+  private async openInBrowser(markdown: string, document: vscode.TextDocument, themeColors?: any): Promise<void> {
     try {
       Logger.info('Generating HTML for browser');
 
@@ -346,7 +375,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
       const htmlContent = await marked(markdown);
 
       // Create complete HTML document with CrossNote styling
-      const fullHtml = this.generateFullHtml(htmlContent, document);
+      const fullHtml = this.generateFullHtml(htmlContent, document, themeColors);
 
       // Generate temp file path
       const tempDir = os.tmpdir();
@@ -371,16 +400,26 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
 
   /**
    * Generate complete HTML document with CrossNote (Markdown Preview Enhanced) styling
-   * Supports both light and dark themes
+   * Supports both light and dark themes, and uses actual theme colors when available
    */
-  private generateFullHtml(bodyContent: string, document: vscode.TextDocument): string {
+  private generateFullHtml(bodyContent: string, document: vscode.TextDocument, themeColors?: any): string {
     const title = path.basename(document.uri.fsPath, '.md');
     const currentTheme = this.resolveTheme();
-    // For HTML export, resolve auto theme to light or dark based on VSCode's current theme
-    const resolvedTheme = currentTheme === 'auto'
-      ? this.resolveAutoTheme()
-      : currentTheme;
-    const isDark = resolvedTheme === 'dark';
+
+    // If we have actual theme colors from the webview (auto mode), use them to detect dark/light
+    let isDark = false;
+    if (themeColors && themeColors.bgColor && themeColors.bgColor.default) {
+      // Check if background is dark by parsing the color
+      const bgColor = themeColors.bgColor.default;
+      isDark = this.isColorDark(bgColor);
+      Logger.info(`Using actual theme colors, detected as ${isDark ? 'dark' : 'light'} based on background: ${bgColor}`);
+    } else {
+      // Fallback to theme detection
+      const resolvedTheme = currentTheme === 'auto'
+        ? this.resolveAutoTheme()
+        : currentTheme;
+      isDark = resolvedTheme === 'dark';
+    }
 
     return `<!DOCTYPE html>
 <html>
