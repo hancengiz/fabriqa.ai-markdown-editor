@@ -51,16 +51,15 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
     const config = vscode.workspace.getConfiguration('fabriqa');
     const themeSetting = config.get<string>('theme', 'light');
 
-    // Only update if in auto mode
+    // Only update if in auto mode - tell webviews to refresh their theme
     if (themeSetting === 'auto') {
-      const resolvedTheme = this.resolveTheme();
-      Logger.info(`Theme changed to ${resolvedTheme}, updating all webviews`);
+      Logger.info(`VSCode theme changed, notifying webviews to refresh auto theme`);
 
-      // Update all active webviews
+      // Update all active webviews to refresh their theme
       for (const [uri, webviewData] of this.activeWebviews.entries()) {
         webviewData.panel.webview.postMessage({
           type: 'themeChanged',
-          theme: resolvedTheme
+          theme: 'auto'
         });
       }
     }
@@ -68,21 +67,14 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
 
   /**
    * Resolve theme based on user setting and VS Code's current theme
-   * Returns 'light' or 'dark'
+   * Returns 'light', 'dark', or 'auto'
    */
-  private resolveTheme(): 'light' | 'dark' {
+  private resolveTheme(): 'light' | 'dark' | 'auto' {
     const config = vscode.workspace.getConfiguration('fabriqa');
     const themeSetting = config.get<string>('theme', 'light');
 
-    if (themeSetting === 'light' || themeSetting === 'dark') {
-      return themeSetting as 'light' | 'dark';
-    }
-
-    // Auto mode - detect VS Code's theme
-    if (themeSetting === 'auto') {
-      const colorTheme = vscode.window.activeColorTheme;
-      // VS Code theme kind: 1 = Light, 2 = Dark, 3 = High Contrast
-      return colorTheme.kind === vscode.ColorThemeKind.Dark ? 'dark' : 'light';
+    if (themeSetting === 'light' || themeSetting === 'dark' || themeSetting === 'auto') {
+      return themeSetting as 'light' | 'dark' | 'auto';
     }
 
     // Default to light
@@ -352,7 +344,11 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
   private generateFullHtml(bodyContent: string, document: vscode.TextDocument): string {
     const title = path.basename(document.uri.fsPath, '.md');
     const currentTheme = this.resolveTheme();
-    const isDark = currentTheme === 'dark';
+    // For HTML export, resolve auto theme to light or dark based on VSCode's current theme
+    const resolvedTheme = currentTheme === 'auto'
+      ? (vscode.window.activeColorTheme.kind === vscode.ColorThemeKind.Dark ? 'dark' : 'light')
+      : currentTheme;
+    const isDark = resolvedTheme === 'dark';
 
     return `<!DOCTYPE html>
 <html>

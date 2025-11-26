@@ -247,7 +247,7 @@ function initializeEditor(): void {
   // Get initial mode and theme from body data attributes
   const bodyElement = document.body;
   const initialMode = (bodyElement.dataset.mode as EditorMode) || 'livePreview';
-  const initialTheme = bodyElement.dataset.theme as 'light' | 'dark' || 'light';
+  const initialTheme = bodyElement.dataset.theme as 'light' | 'dark' | 'auto' || 'light';
 
   console.log('[Webview] Initial mode:', initialMode);
   console.log('[Webview] Initial theme:', initialTheme);
@@ -655,9 +655,9 @@ function injectThemeCSS(): void {
 /**
  * Apply theme to the editor
  */
-function applyTheme(theme: 'light' | 'dark'): void {
+function applyTheme(theme: 'light' | 'dark' | 'auto'): void {
   // Update theme in theme system first
-  const themeId = theme === 'dark' ? 'vscode-dark' : 'vscode-light';
+  const themeId = theme === 'auto' ? 'vscode-auto' : (theme === 'dark' ? 'vscode-dark' : 'vscode-light');
   setTheme(themeId);
 
   // Update body data attribute for CSS
@@ -686,7 +686,7 @@ function applyTheme(theme: 'light' | 'dark'): void {
 /**
  * Handle theme change message from VS Code
  */
-function handleThemeChange(theme: 'light' | 'dark'): void {
+function handleThemeChange(theme: 'light' | 'dark' | 'auto'): void {
   log(`Received theme change: ${theme}`);
   applyTheme(theme);
 }

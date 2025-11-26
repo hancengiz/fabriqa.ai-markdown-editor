@@ -1,6 +1,7 @@
 import { Theme, ThemeInfo } from './types';
 import { vscodeLightTheme } from './vscode-light';
 import { vscodeDarkTheme } from './vscode-dark';
+import { vscodeAutoTheme } from './vscode-auto';
 
 /**
  * Available themes
@@ -9,6 +10,7 @@ import { vscodeDarkTheme } from './vscode-dark';
 const themes: Record<string, ThemeInfo> = {
   'vscode-light': vscodeLightTheme,
   'vscode-dark': vscodeDarkTheme,
+  'vscode-auto': vscodeAutoTheme,
   // Future themes can be added here:
   // 'custom': customTheme,
 };
