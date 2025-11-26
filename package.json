@@ -425,6 +425,24 @@
         "key": "ctrl+0",
         "mac": "cmd+0",
         "when": "activeCustomEditorId == fabriqa.markdownEditor"
+      },
+      {
+        "command": "fabriqa.switchToLivePreview",
+        "key": "ctrl+shift+l",
+        "mac": "cmd+shift+l",
+        "when": "activeCustomEditorId == fabriqa.markdownEditor"
+      },
+      {
+        "command": "fabriqa.switchToSource",
+        "key": "ctrl+shift+e",
+        "mac": "cmd+shift+e",
+        "when": "activeCustomEditorId == fabriqa.markdownEditor"
+      },
+      {
+        "command": "fabriqa.switchToReading",
+        "key": "ctrl+shift+r",
+        "mac": "cmd+shift+r",
+        "when": "activeCustomEditorId == fabriqa.markdownEditor"
       }
     ]
   },
