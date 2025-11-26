@@ -362,6 +362,16 @@
           "maximum": 3,
           "description": "Line height multiplier"
         },
+        "fabriqa.theme": {
+          "type": "string",
+          "enum": [
+            "light",
+            "dark",
+            "auto"
+          ],
+          "default": "light",
+          "description": "Editor theme: 'light' for light theme, 'dark' for dark theme, 'auto' to follow VS Code's theme"
+        },
         "fabriqa.enableDebugLogging": {
           "type": "boolean",
           "default": false,

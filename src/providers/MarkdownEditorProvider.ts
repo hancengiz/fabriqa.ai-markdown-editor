@@ -36,6 +36,57 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
     // Note: VS Code's Custom Editor API does not provide a way to receive selection/position
     // information when opening files from search results. This is a known limitation.
     // Users can use Cmd+F within the editor for search functionality.
+
+    // Listen for theme changes to update webviews in auto mode
+    vscode.window.onDidChangeActiveColorTheme(() => {
+      this.handleThemeChange();
+    });
+  }
+
+  /**
+   * Handle VS Code theme change
+   * Updates all active webviews if theme is set to 'auto'
+   */
+  private handleThemeChange(): void {
+    const config = vscode.workspace.getConfiguration('fabriqa');
+    const themeSetting = config.get<string>('theme', 'light');
+
+    // Only update if in auto mode
+    if (themeSetting === 'auto') {
+      const resolvedTheme = this.resolveTheme();
+      Logger.info(`Theme changed to ${resolvedTheme}, updating all webviews`);
+
+      // Update all active webviews
+      for (const [uri, webviewData] of this.activeWebviews.entries()) {
+        webviewData.panel.webview.postMessage({
+          type: 'themeChanged',
+          theme: resolvedTheme
+        });
+      }
+    }
+  }
+
+  /**
+   * Resolve theme based on user setting and VS Code's current theme
+   * Returns 'light' or 'dark'
+   */
+  private resolveTheme(): 'light' | 'dark' {
+    const config = vscode.workspace.getConfiguration('fabriqa');
+    const themeSetting = config.get<string>('theme', 'light');
+
+    if (themeSetting === 'light' || themeSetting === 'dark') {
+      return themeSetting as 'light' | 'dark';
+    }
+
+    // Auto mode - detect VS Code's theme
+    if (themeSetting === 'auto') {
+      const colorTheme = vscode.window.activeColorTheme;
+      // VS Code theme kind: 1 = Light, 2 = Dark, 3 = High Contrast
+      return colorTheme.kind === vscode.ColorThemeKind.Dark ? 'dark' : 'light';
+    }
+
+    // Default to light
+    return 'light';
   }
 
   /**
@@ -295,11 +346,13 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
   }
 
   /**
-   * Generate complete HTML document with exact CrossNote (Markdown Preview Enhanced) styling
-   * Extracted from CrossNote HTML export for pixel-perfect matching
+   * Generate complete HTML document with CrossNote (Markdown Preview Enhanced) styling
+   * Supports both light and dark themes
    */
   private generateFullHtml(bodyContent: string, document: vscode.TextDocument): string {
     const title = path.basename(document.uri.fsPath, '.md');
+    const currentTheme = this.resolveTheme();
+    const isDark = currentTheme === 'dark';
 
     return `<!DOCTYPE html>
 <html>
@@ -308,13 +361,13 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${title}</title>
   <style>
-    /* Exact CrossNote / Markdown Preview Enhanced CSS */
+    /* CrossNote / Markdown Preview Enhanced CSS - Theme Aware */
     html body {
       font-family: 'Helvetica Neue', Helvetica, 'Segoe UI', Arial, freesans, sans-serif;
       font-size: 16px;
       line-height: 1.6;
-      color: #333;
-      background-color: #fff;
+      color: ${isDark ? '#d4d4d4' : '#333'};
+      background-color: ${isDark ? '#1e1e1e' : '#fff'};
       overflow: initial;
       box-sizing: border-box;
       word-wrap: break-word;
@@ -329,7 +382,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
       line-height: 1.2;
       margin-top: 1em;
       margin-bottom: 16px;
-      color: #000;
+      color: ${isDark ? '#d4d4d4' : '#000'};
     }
 
     html body h1 {
@@ -385,11 +438,11 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
 
     /* Text styling */
     html body strong {
-      color: #000;
+      color: ${isDark ? '#d4d4d4' : '#000'};
     }
 
     html body del {
-      color: #5c5c5c;
+      color: ${isDark ? '#858585' : '#5c5c5c'};
     }
 
     html body a:not([href]) {
@@ -398,12 +451,12 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
     }
 
     html body a {
-      color: #08c;
+      color: ${isDark ? '#4fc1ff' : '#08c'};
       text-decoration: none;
     }
 
     html body a:hover {
-      color: #00a3f5;
+      color: ${isDark ? '#6dd1ff' : '#00a3f5'};
       text-decoration: none;
     }
 
@@ -464,9 +517,9 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
       margin: 16px 0;
       font-size: inherit;
       padding: 0 15px;
-      color: #5c5c5c;
-      background-color: #f0f0f0;
-      border-left: 4px solid #d6d6d6;
+      color: ${isDark ? '#858585' : '#5c5c5c'};
+      background-color: ${isDark ? '#252526' : '#f0f0f0'};
+      border-left: 4px solid ${isDark ? '#3e3e42' : '#d6d6d6'};
     }
 
     html body blockquote > :first-child {
@@ -481,7 +534,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
     html body hr {
       height: 4px;
       margin: 32px 0;
-      background-color: #d6d6d6;
+      background-color: ${isDark ? '#3e3e42' : '#d6d6d6'};
       border: 0 none;
     }
 
@@ -499,11 +552,11 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
 
     html body table th {
       font-weight: 700;
-      color: #000;
+      color: ${isDark ? '#d4d4d4' : '#000'};
     }
 
     html body table td, html body table th {
-      border: 1px solid #d6d6d6;
+      border: 1px solid ${isDark ? '#3e3e42' : '#d6d6d6'};
       padding: 6px 13px;
     }
 
@@ -529,8 +582,8 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
     html body code {
       font-family: Menlo, Monaco, Consolas, 'Courier New', monospace;
       font-size: .85em;
-      color: #000;
-      background-color: #f0f0f0;
+      color: ${isDark ? '#d4d4d4' : '#000'};
+      background-color: ${isDark ? '#2d2d30' : '#f0f0f0'};
       border-radius: 3px;
       padding: .2em 0;
     }
@@ -557,7 +610,8 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
       padding: 1em;
       overflow: auto;
       line-height: 1.45;
-      border: #d6d6d6;
+      background-color: ${isDark ? '#252526' : '#f5f5f5'};
+      border: ${isDark ? '#3e3e42' : '#d6d6d6'};
       border-radius: 3px;
     }
 
@@ -590,18 +644,18 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
     }
 
     html body kbd {
-      color: #000;
-      border: 1px solid #d6d6d6;
-      border-bottom: 2px solid #c7c7c7;
+      color: ${isDark ? '#d4d4d4' : '#000'};
+      border: 1px solid ${isDark ? '#3e3e42' : '#d6d6d6'};
+      border-bottom: 2px solid ${isDark ? '#2d2d30' : '#c7c7c7'};
       padding: 2px 4px;
-      background-color: #f0f0f0;
+      background-color: ${isDark ? '#252526' : '#f0f0f0'};
       border-radius: 3px;
     }
 
     /* Prism syntax highlighting for code blocks */
     code[class*="language-"],
     pre[class*="language-"] {
-      color: #333;
+      color: ${isDark ? '#d4d4d4' : '#333'};
       background: none;
       font-family: Consolas, "Liberation Mono", Menlo, Courier, monospace;
       text-align: left;
@@ -623,14 +677,14 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
       padding: .8em;
       overflow: auto;
       border-radius: 3px;
-      background: #f5f5f5;
+      background: ${isDark ? '#252526' : '#f5f5f5'};
     }
 
     :not(pre) > code[class*="language-"] {
       padding: .1em;
       border-radius: .3em;
       white-space: normal;
-      background: #f5f5f5;
+      background: ${isDark ? '#252526' : '#f5f5f5'};
     }
 
     /* Markdown preview wrapper */
@@ -706,14 +760,14 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
 
     @media print {
       html body {
-        background-color: #fff;
+        background-color: ${isDark ? '#1e1e1e' : '#fff'};
       }
       html body h1, html body h2, html body h3, html body h4, html body h5, html body h6 {
-        color: #000;
+        color: ${isDark ? '#d4d4d4' : '#000'};
         page-break-after: avoid;
       }
       html body blockquote {
-        color: #5c5c5c;
+        color: ${isDark ? '#858585' : '#5c5c5c'};
       }
       html body pre {
         page-break-inside: avoid;
@@ -782,8 +836,8 @@ ${bodyContent}
     const fontSize = config.get<number>('fontSize', 14);
     const lineHeight = config.get<number>('lineHeight', 1.6);
 
-    // Always use light theme
-    const themeType = 'light';
+    // Resolve theme based on user setting
+    const themeType = this.resolveTheme();
 
     return `<!DOCTYPE html>
 <html lang="en">
@@ -829,92 +883,14 @@ ${bodyContent}
       overflow: auto;
     }
 
-    /* Light theme CSS variables */
-    body {
-      --vscode-editor-foreground: #000000 !important;
-      --vscode-editor-background: #ffffff !important;
-      --vscode-editorCursor-foreground: #000000 !important;
-      --vscode-editor-selectionBackground: #add6ff !important;
-      --vscode-textLink-foreground: #006ab1 !important;
-      --vscode-symbolIcon-classForeground: #267f99 !important;
-      --vscode-textCodeBlock-background: #f5f5f5 !important;
-      --vscode-foreground: #3b3b3b !important;
-    }
+    /* All theme colors are managed by the theme system in webview/themes/ */
+    /* Theme is applied dynamically via CodeMirror's theme extensions */
 
-    /* CodeMirror theme integration */
-    .cm-content {
-      color: var(--vscode-editor-foreground);
-      background-color: var(--vscode-editor-background);
-      caret-color: var(--vscode-editorCursor-foreground);
-    }
-
-    .cm-line {
-      padding: 0 4px;
-    }
-
-    /* Selection is handled by EditorView.theme in webview/main.ts - do not override here */
-
-    .cm-cursor {
-      border-left-color: var(--vscode-editorCursor-foreground);
-    }
-
-    /* Markdown styling */
-    .cm-header {
-      font-weight: bold;
-      color: var(--vscode-symbolIcon-classForeground);
-    }
-
-    .cm-strong {
-      font-weight: bold;
-    }
-
-    .cm-em {
-      font-style: italic;
-    }
-
-    .cm-link {
-      color: var(--vscode-textLink-foreground);
-      text-decoration: none;
-    }
-
-    .cm-link:hover {
-      text-decoration: underline;
-    }
-
-    .cm-code {
-      font-family: var(--vscode-editor-font-family);
-      background-color: var(--vscode-textCodeBlock-background);
-      padding: 2px 4px;
-      border-radius: 3px;
-    }
-
-    /* Loading state */
-    .loading {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 100%;
-      color: var(--vscode-foreground);
-    }
-
-    /* Error state */
-    .error {
-      padding: 20px;
-      color: var(--vscode-errorForeground);
-      background-color: var(--vscode-inputValidation-errorBackground);
-      border: 1px solid var(--vscode-inputValidation-errorBorder);
-      border-radius: 4px;
-      margin: 20px;
-    }
-
-    /* Context menu */
+    /* Context menu - basic structure only, colors injected dynamically */
     #context-menu {
       display: none;
       position: fixed;
-      background-color: #ffffff;
-      border: 1px solid #d6d6d6;
       border-radius: 3px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
       z-index: 10000;
       min-width: 180px;
       padding: 4px 0;
@@ -924,17 +900,25 @@ ${bodyContent}
       padding: 6px 12px;
       cursor: pointer;
       font-size: 13px;
-      color: #000000;
-    }
-
-    .context-menu-item:hover {
-      background-color: #f0f0f0;
     }
 
     .context-menu-separator {
       height: 1px;
-      background-color: #d6d6d6;
       margin: 4px 0;
+    }
+
+    /* Loading and error states - minimal structure */
+    .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+    }
+
+    .error {
+      padding: 20px;
+      border-radius: 4px;
+      margin: 20px;
     }
   </style>
 </head>

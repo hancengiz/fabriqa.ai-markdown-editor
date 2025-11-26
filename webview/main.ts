@@ -14,7 +14,7 @@ import { lintKeymap } from '@codemirror/lint';
 import { livePreviewPlugin } from './editors/livePreviewMode';
 import { readingModePlugin } from './editors/readingMode';
 import { markdownHidingStyles } from './lib/markdown-live-preview';
-import { getCurrentTheme } from './themes';
+import { getCurrentTheme, setTheme } from './themes';
 import {
   toggleBold,
   toggleItalic,
@@ -212,6 +212,7 @@ setupConsoleLogging();
  * Compartments for dynamic reconfiguration
  */
 const modeCompartment = new Compartment();
+const themeCompartment = new Compartment();
 
 /**
  * Editor instance
@@ -243,12 +244,17 @@ function initializeEditor(): void {
 
   console.log('[Webview] Editor container found');
 
-  // Get initial mode from body data attribute
+  // Get initial mode and theme from body data attributes
   const bodyElement = document.body;
   const initialMode = (bodyElement.dataset.mode as EditorMode) || 'livePreview';
+  const initialTheme = bodyElement.dataset.theme as 'light' | 'dark' || 'light';
 
   console.log('[Webview] Initial mode:', initialMode);
+  console.log('[Webview] Initial theme:', initialTheme);
   currentMode = initialMode;
+
+  // Set initial theme
+  applyTheme(initialTheme);
 
   try {
     console.log('[Webview] Creating EditorState...');
@@ -260,7 +266,7 @@ function initializeEditor(): void {
         markdown({ extensions: [GFM] }), // Enable GFM (GitHub Flavored Markdown) including tables
         markdownHidingStyles, // CSS for hiding markdown syntax
         modeCompartment.of(getModeExtensions(initialMode)),
-        getThemeExtensions(),
+        themeCompartment.of(getThemeExtensions()),
         EditorView.updateListener.of((update) => {
           if (update.docChanged && !isUpdatingFromVSCode) {
             // Send edit message to mark document as dirty
@@ -581,9 +587,108 @@ function handleMessage(event: MessageEvent): void {
       handleZoomReset();
       break;
 
+    case 'themeChanged':
+      handleThemeChange(message.theme);
+      break;
+
     default:
       log(`Unknown message type: ${message.type}`);
   }
+}
+
+/**
+ * Inject CSS for non-CodeMirror elements (context menu, etc.)
+ */
+function injectThemeCSS(): void {
+  const themeColors = getCurrentTheme();
+
+  // Remove existing theme style if it exists
+  const existingStyle = document.getElementById('theme-dynamic-css');
+  if (existingStyle) {
+    existingStyle.remove();
+  }
+
+  // Create new style element
+  const style = document.createElement('style');
+  style.id = 'theme-dynamic-css';
+  style.textContent = `
+    /* Context menu theming */
+    #context-menu {
+      background-color: ${themeColors.editor.background};
+      border: 1px solid ${themeColors.borderColor.default};
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .context-menu-item {
+      color: ${themeColors.fgColor.default};
+    }
+
+    .context-menu-item:hover {
+      background-color: ${themeColors.editor.activeLine};
+    }
+
+    .context-menu-separator {
+      background-color: ${themeColors.borderColor.muted};
+    }
+
+    /* Loading and error states */
+    .loading {
+      color: ${themeColors.fgColor.muted};
+    }
+
+    .error {
+      color: ${themeColors.fgColor.danger};
+      background-color: ${themeColors.bgColor.attention};
+      border: 1px solid ${themeColors.borderColor.danger};
+    }
+
+    /* Body background */
+    body {
+      background-color: ${themeColors.editor.background};
+      color: ${themeColors.editor.foreground};
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+
+/**
+ * Apply theme to the editor
+ */
+function applyTheme(theme: 'light' | 'dark'): void {
+  // Update theme in theme system first
+  const themeId = theme === 'dark' ? 'vscode-dark' : 'vscode-light';
+  setTheme(themeId);
+
+  // Update body data attribute for CSS
+  document.body.dataset.theme = theme;
+
+  // Inject CSS for non-CodeMirror elements
+  injectThemeCSS();
+
+  if (!editorView) {
+    log(`Theme set to ${theme} (editor not yet initialized)`);
+    return;
+  }
+
+  try {
+    // Reconfigure editor with new theme
+    editorView.dispatch({
+      effects: themeCompartment.reconfigure(getThemeExtensions())
+    });
+
+    log(`Theme changed to ${theme}`);
+  } catch (error) {
+    logError('Failed to apply theme', error);
+  }
+}
+
+/**
+ * Handle theme change message from VS Code
+ */
+function handleThemeChange(theme: 'light' | 'dark'): void {
+  log(`Received theme change: ${theme}`);
+  applyTheme(theme);
 }
 
 /**
