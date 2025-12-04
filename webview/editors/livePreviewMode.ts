@@ -539,24 +539,19 @@ export const livePreviewPlugin = ViewPlugin.fromClass(
       this.alertRanges.clear();
 
       // Find the active markdown structure containing the cursor
-      // This could be a specific inline element like one bold section: **text**
-      const activeStructure = this.findActiveStructure(view, cursorPos);
+      // Only if the view has focus (otherwise show full preview)
+      const activeStructure = view.hasFocus ? this.findActiveStructure(view, cursorPos) : null;
 
       // Iterate through entire syntax tree
       syntaxTree(view.state).iterate({
         enter: (node) => {
-          // Skip decorating nodes that are part of the active structure
-          // This includes the structure itself and all its children (e.g., the ** marks)
-          if (activeStructure && this.isWithinActiveStructure(node, activeStructure)) {
-            // Return false to skip this node and its children entirely
-            // This means syntax will remain visible for the active element
-            return false;
-          }
+          // Check if node is part of the active structure
+          const isActive = activeStructure ? this.isWithinActiveStructure(node, activeStructure) : false;
 
-          // For all other nodes, apply decorations (hide syntax)
-          // Note: We don't check decoratedRanges at the node level anymore,
-          // only inside processNode() at the decoration level to prevent duplicates
-          this.processNode(node, view, decorations, decoratedRanges);
+          // Process node with active state
+          // We no longer skip active nodes entirely, but pass the state down
+          // so handlers can decide whether to hide syntax or just apply styling
+          this.processNode(node, view, decorations, decoratedRanges, isActive);
         }
       });
 
@@ -608,7 +603,10 @@ export const livePreviewPlugin = ViewPlugin.fromClass(
           // Obsidian-style behavior:
           // - If cursor is on this line: show raw markdown (user can edit or use Cmd+Alt+T)
           // - If cursor is NOT on this line: show checkbox widget (clickable)
-          if (cursorPos >= line.from && cursorPos <= line.to) {
+          // Use view.hasFocus check to ensure we show preview when not focused
+          const isLineActive = view.hasFocus && (cursorPos >= line.from && cursorPos <= line.to);
+
+          if (isLineActive) {
             // Cursor is on this line - skip widget, show raw markdown
             continue;
           }
@@ -658,7 +656,10 @@ export const livePreviewPlugin = ViewPlugin.fromClass(
 
           // Obsidian-style behavior: if cursor is inside the emoji shortcode,
           // show the raw markdown instead of the emoji widget
-          if (cursorPos > from && cursorPos < to) {
+          // Use view.hasFocus check
+          const isEmojiActive = view.hasFocus && (cursorPos > from && cursorPos < to);
+
+          if (isEmojiActive) {
             // Cursor is inside - skip the widget, show raw markdown
             continue;
           }
@@ -740,7 +741,7 @@ export const livePreviewPlugin = ViewPlugin.fromClass(
       return activeStructure;
     }
 
-    processNode(node: SyntaxNode, view: EditorView, decorations: Range<Decoration>[], decoratedRanges: Set<string>): void {
+    processNode(node: SyntaxNode, view: EditorView, decorations: Range<Decoration>[], decoratedRanges: Set<string>, isActive: boolean): void {
       const { from, to, type } = node;
       const nodeText = view.state.doc.sliceString(from, to);
       const theme = getCurrentTheme();
@@ -841,38 +842,40 @@ export const livePreviewPlugin = ViewPlugin.fromClass(
 
         case 'HeaderMark':
           // Hide header marks (# ## ### etc.)
-          if (nodeText.match(/^#+\s?$/)) {
+          if (!isActive && nodeText.match(/^#+\s?$/)) {
             addDecoration(hiddenDecoration, from, to);
           }
           break;
 
         case 'EmphasisMark':
           // Hide emphasis marks (*, **, _, __) - matches any combination
-          if (nodeText.match(/^[*_]+$/)) {
+          if (!isActive && nodeText.match(/^[*_]+$/)) {
             addDecoration(hiddenDecoration, from, to);
           }
           break;
 
         case 'StrikethroughMark':
           // Hide strikethrough marks (~~)
-          if (nodeText.match(/^~~$/)) {
+          if (!isActive && nodeText.match(/^~~$/)) {
             addDecoration(hiddenDecoration, from, to);
           }
           break;
 
         case 'Link':
           // Handle link syntax [text](url)
-          this.handleLink(node, view, decorations, decoratedRanges);
+          this.handleLink(node, view, decorations, decoratedRanges, isActive);
           break;
 
         case 'Image':
           // Handle image syntax ![alt](url)
-          this.handleImage(node, view, decorations, decoratedRanges);
+          this.handleImage(node, view, decorations, decoratedRanges, isActive);
           break;
 
         case 'CodeMark':
           // Hide inline code marks (`)
-          addDecoration(hiddenDecoration, from, to);
+          if (!isActive) {
+            addDecoration(hiddenDecoration, from, to);
+          }
           break;
 
         case 'InlineCode':
@@ -915,7 +918,7 @@ export const livePreviewPlugin = ViewPlugin.fromClass(
 
         case 'Blockquote':
           // Check if this is a GitHub alert (> [!NOTE], > [!TIP], etc.)
-          this.handleBlockquoteOrAlert(node, view, decorations, decoratedRanges, addDecoration);
+          this.handleBlockquoteOrAlert(node, view, decorations, decoratedRanges, addDecoration, isActive);
           break;
 
         case 'ListMark':
@@ -953,6 +956,11 @@ export const livePreviewPlugin = ViewPlugin.fromClass(
           // Replace task list checkboxes with clickable widgets
           // Safety check: ensure checkbox text doesn't contain newlines
           if (nodeText.includes('\n')) {
+            break;
+          }
+
+          // Don't replace if active
+          if (isActive) {
             break;
           }
 
@@ -1010,11 +1018,16 @@ export const livePreviewPlugin = ViewPlugin.fromClass(
 
         case 'FencedCode':
           // Handle Mermaid diagrams in code blocks
-          this.handleMermaidDiagram(node, view, decorations, decoratedRanges);
+          this.handleMermaidDiagram(node, view, decorations, decoratedRanges, isActive);
           break;
 
         case 'HorizontalRule':
           // Replace horizontal rule markdown with styled hr element
+          // If active, show raw markdown
+          if (isActive) {
+            break;
+          }
+
           const hrText = view.state.doc.sliceString(from, to);
 
           // Skip if horizontal rule contains newlines (can't use Decoration.replace on multi-line content)
@@ -1077,6 +1090,10 @@ export const livePreviewPlugin = ViewPlugin.fromClass(
 
         case 'Table':
           // Render HTML table widget
+          // If active, show raw markdown
+          if (isActive) {
+            break;
+          }
           this.handleTable(node, view, decorations, decoratedRanges);
           break;
 
@@ -1090,7 +1107,7 @@ export const livePreviewPlugin = ViewPlugin.fromClass(
      * Shows diagram widget and hides code block content
      * Obsidian-style behavior: shows raw code when cursor is inside the block
      */
-    handleMermaidDiagram(fencedCodeNode: SyntaxNode, view: EditorView, decorations: Range<Decoration>[], decoratedRanges: Set<string>): void {
+    handleMermaidDiagram(fencedCodeNode: SyntaxNode, view: EditorView, decorations: Range<Decoration>[], decoratedRanges: Set<string>, isActive: boolean): void {
       const theme = getCurrentTheme();
       let isMermaid = false;
       let mermaidCode = '';
@@ -1151,26 +1168,9 @@ export const livePreviewPlugin = ViewPlugin.fromClass(
         return;
       }
 
-      // If this is a mermaid code block, check cursor position and selection
+      // If this is a mermaid code block, check if active
       if (isMermaid && mermaidCode) {
-        const selection = view.state.selection.main;
-        const cursorPos = selection.head;
-        const selectionStart = selection.from;
-        const selectionEnd = selection.to;
-
-        // Obsidian-style behavior: show raw code if:
-        // 1. Cursor is inside the code block, OR
-        // 2. The code block is part of a text selection (selection overlaps with code block)
-        // This is important for:
-        // - Search functionality - when a match is found in mermaid code
-        // - Copy/paste - user needs to see the raw code when selecting text
-        // - Editing - user needs to see raw code when cursor is inside
-        const cursorInside = cursorPos >= codeStart && cursorPos <= codeEnd;
-        const selectionOverlaps =
-          (selectionStart <= codeEnd && selectionEnd >= codeStart) && // Selection overlaps with code block
-          (selectionStart !== selectionEnd); // There's an actual selection (not just cursor)
-
-        if (cursorInside || selectionOverlaps) {
+        if (isActive) {
           // Cursor is inside or code block is selected - don't add widget or hiding
           // Show the raw code so user can see/edit/copy it
           return;
@@ -1207,7 +1207,9 @@ export const livePreviewPlugin = ViewPlugin.fromClass(
       }
     }
 
-    handleLink(linkNode: SyntaxNode, view: EditorView, decorations: Range<Decoration>[], decoratedRanges: Set<string>): void {
+    handleLink(linkNode: SyntaxNode, view: EditorView, decorations: Range<Decoration>[], decoratedRanges: Set<string>, isActive: boolean): void {
+      if (isActive) return;
+
       let linkText = '';
       let linkUrl = '';
       let linkStart = linkNode.from;
@@ -1248,7 +1250,7 @@ export const livePreviewPlugin = ViewPlugin.fromClass(
      * Renders images inline in live preview
      * Obsidian-style: When cursor is inside, show markdown above + rendered image below
      */
-    handleImage(imageNode: SyntaxNode, view: EditorView, decorations: Range<Decoration>[], decoratedRanges: Set<string>): void {
+    handleImage(imageNode: SyntaxNode, view: EditorView, decorations: Range<Decoration>[], decoratedRanges: Set<string>, isActive: boolean): void {
       let altText = '';
       let imageUrl = '';
       let imageStart = imageNode.from;
@@ -1279,10 +1281,7 @@ export const livePreviewPlugin = ViewPlugin.fromClass(
 
       if (!imageUrl) return;
 
-      const cursorPos = view.state.selection.main.head;
-      const cursorInImage = cursorPos >= imageStart && cursorPos <= imageEnd;
-
-      if (cursorInImage) {
+      if (isActive) {
         // Cursor is inside image - show markdown syntax AND rendered image
         // Add widget after the markdown text (not replacing it)
         const rangeKey = `${imageStart}-${imageEnd}-widget`;
@@ -1319,22 +1318,19 @@ export const livePreviewPlugin = ViewPlugin.fromClass(
       view: EditorView,
       decorations: Range<Decoration>[],
       decoratedRanges: Set<string>,
-      addDecoration: (decoration: Decoration, from: number, to: number) => void
+      addDecoration: (decoration: Decoration, from: number, to: number) => void,
+      isActive: boolean
     ): void {
       const theme = getCurrentTheme();
       const from = blockquoteNode.from;
       const to = blockquoteNode.to;
       const blockquoteText = view.state.doc.sliceString(from, to);
-      const cursorPos = view.state.selection.main.head;
-
-      // Check if cursor is inside this blockquote
-      const cursorInside = cursorPos >= from && cursorPos <= to;
 
       // Check for GitHub alert syntax: [!NOTE], [!TIP], [!IMPORTANT], [!WARNING], [!CAUTION]
       // Match at start of blockquote text, accounting for multi-line blockquotes
       const alertMatch = blockquoteText.match(/^\s*>\s*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]/i);
 
-      if (alertMatch && !cursorInside) {
+      if (alertMatch && !isActive) {
         const alertType = alertMatch[1].toLowerCase() as 'note' | 'tip' | 'important' | 'warning' | 'caution';
 
         // Safely access alert colors with fallback
@@ -1428,7 +1424,7 @@ export const livePreviewPlugin = ViewPlugin.fromClass(
             decoratedRanges.add(titleKey);
           }
         }
-      } else if (!cursorInside) {
+      } else if (!isActive) {
         // Regular blockquote styling (only if cursor is outside)
         addDecoration(
           Decoration.mark({
