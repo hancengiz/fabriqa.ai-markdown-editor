@@ -58,15 +58,16 @@ const basicExtensions = [
   search({ top: false }), // Add search support without panel UI
   keymap.of([
     // Mode switching shortcuts (editor rendering modes)
+    // Using L/E/R to avoid conflicts with VS Code shortcuts (Cmd+Shift+P = Command Palette, Cmd+Shift+S = Save As)
     {
-      key: 'Mod-Shift-p',
+      key: 'Mod-Shift-l',
       run: () => {
         switchMode('livePreview');
         return true;
       }
     },
     {
-      key: 'Mod-Shift-s',
+      key: 'Mod-Shift-e',
       run: () => {
         switchMode('source');
         return true;
