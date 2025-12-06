@@ -1,6 +1,6 @@
 import { EditorView } from '@codemirror/view';
 import { EditorSelection } from '@codemirror/state';
-import { getVisualWidth, padString } from '../utils/textWidth';
+import { getPixelWidth, getRenderedPixelWidth, getSpacePixelWidth, stripMarkdownSyntax } from '../utils/textWidth';
 
 /**
  * Markdown formatting commands for keyboard shortcuts
@@ -819,7 +819,42 @@ export function deleteTableColumn(view: EditorView): boolean {
 }
 
 /**
+ * Pad a cell to reach a target RENDERED pixel width
+ * The cell content is raw markdown, but we measure the rendered (stripped) version
+ * and add spaces to make the rendered version reach the target width
+ */
+function padCellToRenderedWidth(cell: string, targetRenderedWidth: number): string {
+  const renderedCell = stripMarkdownSyntax(cell);
+  const currentRenderedWidth = getPixelWidth(renderedCell);
+
+  if (currentRenderedWidth >= targetRenderedWidth) {
+    return cell;
+  }
+
+  const spaceWidth = getPixelWidth(' ');
+
+  // Start with an estimate
+  let spacesNeeded = Math.floor((targetRenderedWidth - currentRenderedWidth) / spaceWidth);
+
+  // Iteratively add spaces until rendered width reaches target
+  let result = cell + ' '.repeat(spacesNeeded);
+  let resultRendered = stripMarkdownSyntax(result);
+  let resultWidth = getPixelWidth(resultRendered);
+
+  while (resultWidth < targetRenderedWidth) {
+    spacesNeeded++;
+    result = cell + ' '.repeat(spacesNeeded);
+    resultRendered = stripMarkdownSyntax(result);
+    resultWidth = getPixelWidth(resultRendered);
+  }
+
+  return result;
+}
+
+/**
  * Format table (align all columns)
+ * Uses pixel-based width calculation for accurate alignment with any font
+ * Measures RENDERED width (with markdown syntax stripped) for Live Preview alignment
  */
 export function formatTable(view: EditorView): boolean {
   const tableInfo = getTableInfo(view);
@@ -833,33 +868,68 @@ export function formatTable(view: EditorView): boolean {
   // Parse all rows into cells
   const allCells = rows.map(row => parseTableRow(row));
 
-  // Calculate max width for each column
-  const colWidths: number[] = [];
-  allCells.forEach(cells => {
+  // Get space width for minimum column calculation
+  const spaceWidth = getSpacePixelWidth();
+  const minColPixelWidth = spaceWidth * 3; // Minimum 3 characters width
+
+  // Calculate max RENDERED PIXEL width for each column
+  // We measure the rendered (markdown-stripped) version of each cell
+  const colRenderedWidths: number[] = [];
+  allCells.forEach((cells, rowIndex) => {
     cells.forEach((cell, i) => {
-      // Enforce minimum width of 3 for valid markdown tables
-      colWidths[i] = Math.max(colWidths[i] || 3, getVisualWidth(cell));
+      // Skip separator row for width calculation
+      if (rowIndex === 1 && cell.includes('-')) {
+        return;
+      }
+      // Measure the RENDERED width (with markdown stripped)
+      const cellRenderedWidth = getRenderedPixelWidth(cell);
+      colRenderedWidths[i] = Math.max(colRenderedWidths[i] || minColPixelWidth, cellRenderedWidth);
     });
   });
 
-  // Format each row with padding
+  // Format each row with padding using rendered pixel-based alignment
   const formattedRows = allCells.map((cells, rowIndex) => {
     const paddedCells = cells.map((cell, colIndex) => {
-      // For separator row, adjust separator length
+      const targetRenderedWidth = colRenderedWidths[colIndex];
+
+      // For separator row, create dashes that match the column rendered width
       if (rowIndex === 1 && cell.includes('-')) {
         const isCenter = cell.startsWith(':') && cell.endsWith(':');
         const isRight = !cell.startsWith(':') && cell.endsWith(':');
-        const width = colWidths[colIndex];
+
+        // Use iterative approach to find exact number of dashes needed
+        const dashWidth = getPixelWidth('-');
+        const colonWidth = getPixelWidth(':');
 
         if (isCenter) {
-          return ':' + '-'.repeat(Math.max(1, width - 2)) + ':';
+          let numDashes = Math.max(1, Math.floor((targetRenderedWidth - 2 * colonWidth) / dashWidth));
+          let sepStr = ':' + '-'.repeat(numDashes) + ':';
+          while (getPixelWidth(sepStr) < targetRenderedWidth) {
+            numDashes++;
+            sepStr = ':' + '-'.repeat(numDashes) + ':';
+          }
+          return sepStr;
         } else if (isRight) {
-          return '-'.repeat(Math.max(1, width - 1)) + ':';
+          let numDashes = Math.max(1, Math.floor((targetRenderedWidth - colonWidth) / dashWidth));
+          let sepStr = '-'.repeat(numDashes) + ':';
+          while (getPixelWidth(sepStr) < targetRenderedWidth) {
+            numDashes++;
+            sepStr = '-'.repeat(numDashes) + ':';
+          }
+          return sepStr;
         } else {
-          return '-'.repeat(width);
+          let numDashes = Math.max(3, Math.floor(targetRenderedWidth / dashWidth));
+          let sepStr = '-'.repeat(numDashes);
+          while (getPixelWidth(sepStr) < targetRenderedWidth) {
+            numDashes++;
+            sepStr = '-'.repeat(numDashes);
+          }
+          return sepStr;
         }
       }
-      return padString(cell, colWidths[colIndex]);
+
+      // For regular cells, pad to target RENDERED pixel width
+      return padCellToRenderedWidth(cell, targetRenderedWidth);
     });
     return formatTableRow(paddedCells);
   });
