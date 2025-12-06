@@ -297,57 +297,6 @@
           "default": "light",
           "description": "Editor theme: 'light' for light theme, 'dark' for dark theme, 'auto' to follow VS Code's theme"
         },
-        "fabriqa.configFile": {
-          "type": "string",
-          "default": ".vscode/fabriqa-markdown-editor-config.json",
-          "description": "Path to the JSON configuration file"
-        },
-        "fabriqa.sidebarSections": {
-          "type": "array",
-          "default": [
-            {
-              "id": "specs",
-              "title": "SPECS",
-              "collapsed": false,
-              "filePatterns": [
-                "specs/**/*.md"
-              ]
-            }
-          ],
-          "description": "Configure which sections appear in the fabriqa sidebar. Each section can have: id, title, collapsed, filePatterns (glob), and description",
-          "items": {
-            "type": "object",
-            "properties": {
-              "id": {
-                "type": "string",
-                "description": "Unique identifier for the section"
-              },
-              "title": {
-                "type": "string",
-                "description": "Display title for the section"
-              },
-              "collapsed": {
-                "type": "boolean",
-                "description": "Whether the section starts collapsed"
-              },
-              "filePatterns": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                },
-                "description": "Glob patterns to match files (e.g., 'docs/**/*.md')"
-              },
-              "description": {
-                "type": "string",
-                "description": "Optional description shown for empty sections"
-              }
-            },
-            "required": [
-              "id",
-              "title"
-            ]
-          }
-        },
         "fabriqa.defaultMode": {
           "type": "string",
           "enum": [

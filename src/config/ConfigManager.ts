@@ -44,17 +44,14 @@ export class ConfigManager {
    * Get the full path to the config file
    */
   private getConfigFilePath(): string {
-    const configSetting = vscode.workspace.getConfiguration('fabriqa').get<string>('configFile');
-    const relativePath = configSetting || '.vscode/fabriqa-markdown-editor-config.json';
-    return relativePath;
+    return '.vscode/fabriqa-markdown-editor-config.json';
   }
 
   /**
    * Load and validate the configuration
-   * Priority: .vscode/fabriqa-markdown-editor-config.json > VS Code settings > defaults
+   * Uses .vscode/fabriqa-markdown-editor-config.json or defaults
    */
   private loadConfig(): ValidatedConfig {
-    // 1. Try .vscode/fabriqa-markdown-editor-config.json
     const absoluteConfigPath = path.join(this.workspaceRoot, this.configPath);
     if (fs.existsSync(absoluteConfigPath)) {
       try {
@@ -68,16 +65,7 @@ export class ConfigManager {
       }
     }
 
-    // 2. Try VS Code settings
-    const vscodeConfig = vscode.workspace.getConfiguration('fabriqa');
-    const sidebarSections = vscodeConfig.get<any[]>('sidebarSections');
-
-    if (sidebarSections && sidebarSections.length > 0) {
-      Logger.info('Loading configuration from VS Code settings');
-      return this.validateConfigAsync({ sections: sidebarSections });
-    }
-
-    // 3. Use defaults
+    // Use defaults if no config file exists
     Logger.info('Using default configuration');
     return this.createDefaultConfig();
   }
