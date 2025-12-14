@@ -1,3 +1,8 @@
+---
+title: "fabriqa.ai markdown editor - Feature Showcase"
+description: "This document demonstrates all supported markdown features in the fabriqa.ai markdown editor."
+---
+
 # fabriqa.ai markdown editor - Feature Showcase
 
 This document demonstrates all supported markdown features in the fabriqa.ai markdown editor.

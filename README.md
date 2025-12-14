@@ -87,10 +87,13 @@ Use the toolbar buttons at the top of the editor:
 
 Configure the extension in VS Code settings (`Cmd/Ctrl + ,`):
 
+- `fabriqa.theme`: Editor theme - `light`, `dark`, or `auto` to follow VS Code's theme (default: light)
 - `fabriqa.defaultMode`: Default editing mode (`livePreview`, `source`, or `reading`)
 - `fabriqa.fontSize`: Font size for the editor (default: 14)
 - `fabriqa.lineHeight`: Line height multiplier (default: 1.6)
-- `fabriqa.sidebarSections`: Configure sidebar sections with glob patterns
+- `fabriqa.enableDebugLogging`: Enable debug logging for troubleshooting
+
+**Note**: Sidebar sections are configured via `.vscode/fabriqa-markdown-editor-config.json` (see Getting Started section above).
 
 ## Table Editing
 

@@ -3,22 +3,17 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { Logger } from '../utils/Logger';
 import {
-  MarkdownConfig,
   ValidatedConfig,
   ValidatedSection,
-  ResolvedFile,
-  ConfigError,
-  DEFAULT_SECTIONS
+  ResolvedFile
 } from './types';
 
 export class ConfigManager {
   private config: ValidatedConfig;
-  private configPath: string;
   private workspaceRoot: string;
 
   constructor() {
     this.workspaceRoot = this.getWorkspaceRoot();
-    this.configPath = this.getConfigFilePath();
     this.config = this.loadConfig();
   }
 
@@ -34,115 +29,108 @@ export class ConfigManager {
   }
 
   /**
-   * Get the path to the config file
+   * Get folder patterns from VS Code settings
    */
-  public getConfigPath(): string {
-    return this.configPath;
-  }
+  private getFolderPatterns(): Array<{ name: string; pattern: string }> {
+    const config = vscode.workspace.getConfiguration('fabriqa');
+    const defaultPatterns = [{ name: 'Markdown Files', pattern: '**/*.md' }];
 
-  /**
-   * Get the full path to the config file
-   */
-  private getConfigFilePath(): string {
-    return '.vscode/fabriqa-markdown-editor-config.json';
-  }
+    const rawPatterns = config.get<unknown>('folderPatterns', defaultPatterns);
 
-  /**
-   * Load and validate the configuration
-   * Uses .vscode/fabriqa-markdown-editor-config.json or defaults
-   */
-  private loadConfig(): ValidatedConfig {
-    const absoluteConfigPath = path.join(this.workspaceRoot, this.configPath);
-    if (fs.existsSync(absoluteConfigPath)) {
-      try {
-        Logger.info('Loading configuration from .vscode/fabriqa-markdown-editor-config.json');
-        const fileContent = fs.readFileSync(absoluteConfigPath, 'utf-8');
-        const rawConfig: MarkdownConfig = JSON.parse(fileContent);
-        return this.validateConfigAsync(rawConfig);
-      } catch (error) {
-        Logger.error('Failed to load config file', error);
-        vscode.window.showErrorMessage(`Failed to load Fabriqa config file: ${error}`);
+    // Handle case where patterns might be in old format or invalid
+    if (!Array.isArray(rawPatterns)) {
+      Logger.warn('folderPatterns is not an array, using default');
+      return defaultPatterns;
+    }
+
+    // Validate and convert each pattern
+    const validPatterns: Array<{ name: string; pattern: string }> = [];
+
+    for (const item of rawPatterns) {
+      if (typeof item === 'string') {
+        // Old format: convert string to object
+        validPatterns.push({
+          name: this.inferNameFromPattern(item),
+          pattern: item
+        });
+      } else if (item && typeof item === 'object' && 'name' in item && 'pattern' in item) {
+        // New format: validate name and pattern exist
+        const obj = item as { name: unknown; pattern: unknown };
+        if (typeof obj.name === 'string' && typeof obj.pattern === 'string') {
+          validPatterns.push({ name: obj.name, pattern: obj.pattern });
+        } else {
+          Logger.warn(`Invalid pattern object: ${JSON.stringify(item)}`);
+        }
+      } else {
+        Logger.warn(`Invalid pattern item: ${JSON.stringify(item)}`);
       }
     }
 
-    // Use defaults if no config file exists
-    Logger.info('Using default configuration');
-    return this.createDefaultConfig();
+    return validPatterns.length > 0 ? validPatterns : defaultPatterns;
   }
 
   /**
-   * Create default configuration
+   * Infer a display name from a glob pattern (for backward compatibility)
    */
-  private createDefaultConfig(): ValidatedConfig {
-    return this.validateConfigAsync({ sections: DEFAULT_SECTIONS });
-  }
-
-  /**
-   * Validate configuration and resolve file paths (synchronous version using glob)
-   */
-  private validateConfigAsync(rawConfig: MarkdownConfig): ValidatedConfig {
-    const errors: ConfigError[] = [];
-    const validatedSections: ValidatedSection[] = [];
-
-    if (!rawConfig.sections || !Array.isArray(rawConfig.sections)) {
-      errors.push({
-        message: 'Config must have a "sections" array',
-        type: 'error'
-      });
-      return { sections: [], errors };
+  private inferNameFromPattern(pattern: string): string {
+    // Extract folder name from pattern like "specs/**/*.md" -> "Specs"
+    const parts = pattern.split('/');
+    if (parts.length > 1 && parts[0] !== '**') {
+      return parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
     }
+    return 'Markdown Files';
+  }
 
-    for (const section of rawConfig.sections) {
-      // Validate section structure
-      if (!section.id || !section.title) {
-        errors.push({
-          section: section.id || 'unknown',
-          message: 'Section must have "id" and "title" fields',
-          type: 'error'
-        });
+  /**
+   * Load configuration from VS Code settings
+   */
+  private loadConfig(): ValidatedConfig {
+    const folderPatterns = this.getFolderPatterns();
+    Logger.info(`Loading folder patterns from settings: ${JSON.stringify(folderPatterns)}`);
+
+    const sections: ValidatedSection[] = [];
+
+    // Create a section for each pattern
+    for (const patternConfig of folderPatterns) {
+      if (!patternConfig.name || !patternConfig.pattern) {
+        Logger.warn(`Skipping invalid pattern config: ${JSON.stringify(patternConfig)}`);
         continue;
       }
 
-      const resolvedFiles: ResolvedFile[] = [];
+      const matchedFiles = this.resolveGlobPattern(patternConfig.pattern);
 
-      // Support filePatterns (glob patterns)
-      if (section.filePatterns && Array.isArray(section.filePatterns)) {
-        for (const pattern of section.filePatterns) {
-          const matchedFiles = this.resolveGlobPattern(pattern);
-          resolvedFiles.push(...matchedFiles);
-        }
-      }
+      // Create section ID from name (lowercase, replace spaces with dashes)
+      const sectionId = patternConfig.name.toLowerCase().replace(/\s+/g, '-');
 
-      // Support explicit files array
-      if (section.files && Array.isArray(section.files)) {
-        for (const filePath of section.files) {
-          const resolved = this.resolveFilePath(filePath);
-          resolvedFiles.push(resolved);
+      const section: ValidatedSection = {
+        id: sectionId,
+        title: patternConfig.name,
+        collapsed: false,
+        files: matchedFiles
+      };
 
-          if (!resolved.exists) {
-            errors.push({
-              section: section.id,
-              file: filePath,
-              message: `File not found: ${filePath}`,
-              type: 'warning'
-            });
-          }
-        }
-      }
-
-      validatedSections.push({
-        id: section.id,
-        title: section.title,
-        collapsed: section.collapsed ?? false,
-        files: resolvedFiles,
-        description: section.description
-      });
+      sections.push(section);
+      Logger.info(`Section "${patternConfig.name}": found ${matchedFiles.length} files`);
     }
 
     return {
-      sections: validatedSections,
-      errors
+      sections,
+      errors: []
     };
+  }
+
+  /**
+   * Remove duplicate files by absolute path
+   */
+  private removeDuplicates(files: ResolvedFile[]): ResolvedFile[] {
+    const seen = new Set<string>();
+    return files.filter(file => {
+      if (seen.has(file.absolutePath)) {
+        return false;
+      }
+      seen.add(file.absolutePath);
+      return true;
+    });
   }
 
   /**
@@ -152,46 +140,59 @@ export class ConfigManager {
     const files: ResolvedFile[] = [];
 
     try {
-      // Simple glob implementation for patterns like "specs/**/*.md"
+      // Handle patterns like "specs/**/*.md", "docs/*.md", "**/*.md"
       const parts = pattern.split('/');
-      const basePath = parts[0];
       const isRecursive = parts.includes('**');
       const filePattern = parts[parts.length - 1];
 
-      const searchPath = path.join(this.workspaceRoot, basePath);
+      // Get the base path (everything before ** or the file pattern)
+      let basePath = '';
+      for (const part of parts) {
+        if (part === '**' || part.includes('*')) {
+          break;
+        }
+        basePath = basePath ? `${basePath}/${part}` : part;
+      }
+
+      const searchPath = basePath
+        ? path.join(this.workspaceRoot, basePath)
+        : this.workspaceRoot;
 
       if (!fs.existsSync(searchPath)) {
+        Logger.warn(`Path does not exist: ${searchPath}`);
         return files;
       }
 
       const matchFiles = (dir: string, recursive: boolean = false) => {
-        const entries = fs.readdirSync(dir, { withFileTypes: true });
+        try {
+          const entries = fs.readdirSync(dir, { withFileTypes: true });
 
-        for (const entry of entries) {
-          const fullPath = path.join(dir, entry.name);
+          for (const entry of entries) {
+            const fullPath = path.join(dir, entry.name);
 
-          if (entry.isDirectory() && (recursive || isRecursive)) {
-            matchFiles(fullPath, true);
-          } else if (entry.isFile()) {
-            // Check if file matches pattern (simple match for *.md)
-            if (filePattern === '*.md' && entry.name.endsWith('.md')) {
-              const relativePath = path.relative(this.workspaceRoot, fullPath);
-              files.push({
-                relativePath,
-                absolutePath: fullPath,
-                exists: true,
-                displayName: entry.name
-              });
-            } else if (entry.name === filePattern) {
-              const relativePath = path.relative(this.workspaceRoot, fullPath);
-              files.push({
-                relativePath,
-                absolutePath: fullPath,
-                exists: true,
-                displayName: entry.name
-              });
+            if (entry.isDirectory()) {
+              // Skip hidden directories and node_modules
+              if (entry.name.startsWith('.') || entry.name === 'node_modules') {
+                continue;
+              }
+              if (recursive || isRecursive) {
+                matchFiles(fullPath, true);
+              }
+            } else if (entry.isFile()) {
+              // Check if file matches pattern
+              if (this.matchesFilePattern(entry.name, filePattern)) {
+                const relativePath = path.relative(this.workspaceRoot, fullPath);
+                files.push({
+                  relativePath,
+                  absolutePath: fullPath,
+                  exists: true,
+                  displayName: entry.name
+                });
+              }
             }
           }
+        } catch (err) {
+          Logger.warn(`Failed to read directory ${dir}: ${err}`);
         }
       };
 
@@ -207,22 +208,23 @@ export class ConfigManager {
   }
 
   /**
-   * Resolve a relative file path to absolute and check if it exists
+   * Check if a filename matches a glob pattern
    */
-  private resolveFilePath(relativePath: string): ResolvedFile {
-    const absolutePath = path.isAbsolute(relativePath)
-      ? relativePath
-      : path.join(this.workspaceRoot, relativePath);
-
-    const exists = fs.existsSync(absolutePath);
-    const displayName = path.basename(relativePath); // Keep .md extension
-
-    return {
-      relativePath,
-      absolutePath,
-      exists,
-      displayName
-    };
+  private matchesFilePattern(filename: string, pattern: string): boolean {
+    // Handle *.md pattern
+    if (pattern === '*.md') {
+      return filename.endsWith('.md');
+    }
+    // Handle exact filename match
+    if (pattern === filename) {
+      return true;
+    }
+    // Handle other patterns with *
+    if (pattern.includes('*')) {
+      const regex = new RegExp('^' + pattern.replace(/\*/g, '.*') + '$');
+      return regex.test(filename);
+    }
+    return false;
   }
 
   /**
@@ -233,69 +235,18 @@ export class ConfigManager {
   }
 
   /**
-   * Reload the configuration from disk
+   * Reload the configuration
    */
   public reload(): void {
-    Logger.info('Reloading configuration');
+    Logger.info('Reloading configuration from settings');
     this.config = this.loadConfig();
-
-    if (this.config.errors.length > 0) {
-      const errorCount = this.config.errors.filter(e => e.type === 'error').length;
-      const warningCount = this.config.errors.filter(e => e.type === 'warning').length;
-
-      if (errorCount > 0) {
-        vscode.window.showErrorMessage(
-          `Fabriqa config has ${errorCount} error(s) and ${warningCount} warning(s). Check output for details.`
-        );
-      } else if (warningCount > 0) {
-        vscode.window.showWarningMessage(
-          `Fabriqa config has ${warningCount} warning(s). Check output for details.`
-        );
-      }
-
-      // Log all errors and warnings
-      for (const error of this.config.errors) {
-        const prefix = error.section ? `[${error.section}]` : '';
-        const fileInfo = error.file ? ` ${error.file}:` : '';
-        if (error.type === 'error') {
-          Logger.error(`${prefix}${fileInfo} ${error.message}`);
-        } else {
-          Logger.warn(`${prefix}${fileInfo} ${error.message}`);
-        }
-      }
-    }
   }
 
   /**
-   * Create a new config file with default sections
+   * Get the config path (kept for compatibility, but no longer used for JSON file)
+   * @deprecated This method is kept for backward compatibility
    */
-  public async createDefaultConfigFile(): Promise<void> {
-    const absoluteConfigPath = path.join(this.workspaceRoot, this.configPath);
-    const configDir = path.dirname(absoluteConfigPath);
-
-    // Create .vscode directory if it doesn't exist
-    if (!fs.existsSync(configDir)) {
-      fs.mkdirSync(configDir, { recursive: true });
-    }
-
-    // Create default config
-    const defaultConfig: MarkdownConfig = {
-      sections: DEFAULT_SECTIONS
-    };
-
-    // Write to file
-    fs.writeFileSync(
-      absoluteConfigPath,
-      JSON.stringify(defaultConfig, null, 2),
-      'utf-8'
-    );
-
-    Logger.info(`Created default config file at ${absoluteConfigPath}`);
-    vscode.window.showInformationMessage(
-      'Created default Fabriqa configuration file'
-    );
-
-    // Reload config
-    this.reload();
+  public getConfigPath(): string {
+    return '.vscode/fabriqa-markdown-editor-config.json';
   }
 }

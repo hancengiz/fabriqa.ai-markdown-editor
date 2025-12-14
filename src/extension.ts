@@ -14,6 +14,13 @@ export function activate(context: vscode.ExtensionContext): void {
   console.log("[Extension] ========== ACTIVATION STARTED ==========");
   Logger.info('fabriqa Markdown Editor activating...');
 
+  // Check if a workspace folder is open - if not, exit gracefully
+  if (!vscode.workspace.workspaceFolders || vscode.workspace.workspaceFolders.length === 0) {
+    Logger.info('No workspace folder is open. fabriqa Markdown Editor requires a workspace to function.');
+    console.log("[Extension] No workspace folder open - extension will activate when a workspace is opened");
+    return;
+  }
+
   // Initialize webview logger (only active in debug mode)
   WebviewLogger.initialize(context);
 
@@ -77,34 +84,16 @@ function setupFileWatchers(
   treeProvider: MarkdownTreeProvider,
   configManager: ConfigManager
 ): void {
-  // Watch for changes to JSON config file
-  const configPath = configManager.getConfigPath();
-  const jsonConfigWatcher = vscode.workspace.createFileSystemWatcher(
-    new vscode.RelativePattern(
-      vscode.workspace.workspaceFolders![0],
-      configPath
-    )
-  );
-
-  jsonConfigWatcher.onDidChange(() => {
-    Logger.info('JSON config file changed, refreshing tree view');
-    configManager.reload();
-    treeProvider.refresh();
+  // Watch for settings changes (folderPatterns)
+  const settingsWatcher = vscode.workspace.onDidChangeConfiguration((e) => {
+    if (e.affectsConfiguration('fabriqa.folderPatterns')) {
+      Logger.info('Folder patterns setting changed, refreshing tree view');
+      configManager.reload();
+      treeProvider.refresh();
+    }
   });
 
-  jsonConfigWatcher.onDidCreate(() => {
-    Logger.info('JSON config file created, refreshing tree view');
-    configManager.reload();
-    treeProvider.refresh();
-  });
-
-  jsonConfigWatcher.onDidDelete(() => {
-    Logger.info('JSON config file deleted, refreshing tree view');
-    configManager.reload();
-    treeProvider.refresh();
-  });
-
-  context.subscriptions.push(jsonConfigWatcher);
+  context.subscriptions.push(settingsWatcher);
 
   // Watch for markdown file changes
   const mdWatcher = vscode.workspace.createFileSystemWatcher('**/*.md');
@@ -121,11 +110,8 @@ function setupFileWatchers(
     treeProvider.refresh();
   });
 
-  mdWatcher.onDidChange((uri) => {
-    Logger.info(`Markdown file changed: ${uri.fsPath}`);
-    configManager.reload();
-    treeProvider.refresh();
-  });
+  // Note: We don't need to refresh tree on file content changes
+  // Only on create/delete which affects the file list
 
   context.subscriptions.push(mdWatcher);
 }

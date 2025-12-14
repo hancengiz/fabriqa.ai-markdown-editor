@@ -363,11 +363,6 @@ export function registerCommands(
       // Get current mode
       const currentMode = editorProvider.getCurrentMode() || 'livePreview';
 
-      // Check if .vscode/fabriqa-markdown-editor-config.json exists
-      const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-      const sidebarConfigPath = workspaceRoot ? path.join(workspaceRoot, '.vscode', 'fabriqa-markdown-editor-config.json') : null;
-      const sidebarConfigExists = sidebarConfigPath ? fs.existsSync(sidebarConfigPath) : false;
-
       // Build menu items
       const items = [
         {
@@ -388,13 +383,8 @@ export function registerCommands(
         { label: '', kind: vscode.QuickPickItemKind.Separator },
         {
           label: '$(gear) Open Settings',
-          description: 'Configure all fabriqa settings',
+          description: 'Configure all fabriqa settings (including folder patterns)',
           action: 'open:settings'
-        },
-        {
-          label: sidebarConfigExists ? '$(file) Edit Sidebar Config' : '$(new-file) Create Sidebar Config',
-          description: sidebarConfigExists ? 'Edit .vscode/fabriqa-markdown-editor-config.json' : 'Create config with default settings',
-          action: 'sidebar:config'
         }
       ];
 
@@ -416,13 +406,7 @@ export function registerCommands(
 
         case 'open':
           if (value === 'settings') {
-            await vscode.commands.executeCommand('workbench.action.openSettings', '@ext:fabriqaai.markdown-editor');
-          }
-          break;
-
-        case 'sidebar':
-          if (value === 'config') {
-            await vscode.commands.executeCommand('fabriqa.createOrEditSidebarConfig');
+            await vscode.commands.executeCommand('workbench.action.openSettings', 'fabriqa');
           }
           break;
       }
@@ -471,55 +455,158 @@ export function registerCommands(
     })
   );
 
-  // Create or edit sidebar config file
+  // Manage folder patterns via Quick Pick menu
   context.subscriptions.push(
-    vscode.commands.registerCommand('fabriqa.createOrEditSidebarConfig', async () => {
-      try {
-        const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-        if (!workspaceRoot) {
-          vscode.window.showErrorMessage('No workspace folder is open');
+    vscode.commands.registerCommand('fabriqa.manageFolderPatterns', async () => {
+      const config = vscode.workspace.getConfiguration('fabriqa');
+      const patterns = config.get<Array<{ name: string; pattern: string }>>(
+        'folderPatterns',
+        [{ name: 'Markdown Files', pattern: '**/*.md' }]
+      );
+
+      // Build menu items
+      interface PatternMenuItem extends vscode.QuickPickItem {
+        action: string;
+        index?: number;
+      }
+
+      const items: PatternMenuItem[] = [
+        {
+          label: '$(add) Add New Folder Pattern',
+          description: 'Add a new section to the sidebar',
+          action: 'add'
+        },
+        { label: '', kind: vscode.QuickPickItemKind.Separator, action: '' }
+      ];
+
+      // Add existing patterns
+      patterns.forEach((p, index) => {
+        items.push({
+          label: `$(folder) ${p.name}`,
+          description: p.pattern,
+          action: 'edit',
+          index
+        });
+      });
+
+      const selected = await vscode.window.showQuickPick(items, {
+        placeHolder: 'Manage Folder Patterns'
+      });
+
+      if (!selected) {
+        return;
+      }
+
+      if (selected.action === 'add') {
+        // Add new pattern
+        const name = await vscode.window.showInputBox({
+          prompt: 'Enter a display name for this section',
+          placeHolder: 'e.g., Documentation, Specs, Notes'
+        });
+
+        if (!name) {
           return;
         }
 
-        // Create .vscode directory if it doesn't exist
-        const vscodeDir = path.join(workspaceRoot, '.vscode');
-        if (!fs.existsSync(vscodeDir)) {
-          fs.mkdirSync(vscodeDir, { recursive: true });
+        const pattern = await vscode.window.showInputBox({
+          prompt: 'Enter the folder pattern (glob)',
+          placeHolder: 'e.g., docs/**/*.md, specs/*.md',
+          value: `${name.toLowerCase()}/**/*.md`
+        });
+
+        if (!pattern) {
+          return;
         }
 
-        const sidebarConfigPath = path.join(vscodeDir, 'fabriqa-markdown-editor-config.json');
-        const configExists = fs.existsSync(sidebarConfigPath);
+        // Add to patterns
+        const newPatterns = [...patterns, { name, pattern }];
+        await config.update('folderPatterns', newPatterns, vscode.ConfigurationTarget.Workspace);
 
-        // If file doesn't exist, create it with content from current config
-        if (!configExists) {
-          // Get current config to use as template (only basic structure)
-          const currentConfig = configManager.getConfig();
-          const defaultContent = {
-            sections: currentConfig.sections.map(section => ({
-              id: section.id,
-              title: section.title,
-              collapsed: section.collapsed
-            }))
-          };
+        vscode.window.showInformationMessage(`Added folder pattern: ${name}`);
+        configManager.reload();
+        treeProvider.refresh();
 
-          fs.writeFileSync(sidebarConfigPath, JSON.stringify(defaultContent, null, 2), 'utf-8');
-          Logger.info(`Created sidebar config: ${sidebarConfigPath}`);
-          vscode.window.showInformationMessage('Created .vscode/fabriqa-markdown-editor-config.json');
+      } else if (selected.action === 'edit' && selected.index !== undefined) {
+        // Edit or remove existing pattern
+        const currentPattern = patterns[selected.index];
+
+        const editItems: PatternMenuItem[] = [
+          {
+            label: '$(edit) Edit Name',
+            description: `Current: ${currentPattern.name}`,
+            action: 'editName'
+          },
+          {
+            label: '$(edit) Edit Pattern',
+            description: `Current: ${currentPattern.pattern}`,
+            action: 'editPattern'
+          },
+          {
+            label: '$(trash) Remove',
+            description: 'Remove this folder pattern',
+            action: 'remove'
+          }
+        ];
+
+        const editAction = await vscode.window.showQuickPick(editItems, {
+          placeHolder: `Edit "${currentPattern.name}"`
+        });
+
+        if (!editAction) {
+          return;
         }
 
-        // Open the file
-        const uri = vscode.Uri.file(sidebarConfigPath);
-        await vscode.commands.executeCommand('vscode.open', uri);
+        if (editAction.action === 'editName') {
+          const newName = await vscode.window.showInputBox({
+            prompt: 'Enter new display name',
+            value: currentPattern.name
+          });
 
-        // Refresh tree view to pick up changes
-        setTimeout(() => {
-          treeProvider.refresh();
-        }, 500);
+          if (newName && newName !== currentPattern.name) {
+            patterns[selected.index].name = newName;
+            await config.update('folderPatterns', patterns, vscode.ConfigurationTarget.Workspace);
+            vscode.window.showInformationMessage(`Renamed to: ${newName}`);
+            configManager.reload();
+            treeProvider.refresh();
+          }
 
-      } catch (error) {
-        Logger.error('Failed to create/edit sidebar config', error);
-        vscode.window.showErrorMessage(`Failed to create/edit config: ${error}`);
+        } else if (editAction.action === 'editPattern') {
+          const newPattern = await vscode.window.showInputBox({
+            prompt: 'Enter new folder pattern (glob)',
+            value: currentPattern.pattern
+          });
+
+          if (newPattern && newPattern !== currentPattern.pattern) {
+            patterns[selected.index].pattern = newPattern;
+            await config.update('folderPatterns', patterns, vscode.ConfigurationTarget.Workspace);
+            vscode.window.showInformationMessage(`Pattern updated: ${newPattern}`);
+            configManager.reload();
+            treeProvider.refresh();
+          }
+
+        } else if (editAction.action === 'remove') {
+          const confirm = await vscode.window.showWarningMessage(
+            `Remove folder pattern "${currentPattern.name}"?`,
+            { modal: true },
+            'Remove'
+          );
+
+          if (confirm === 'Remove') {
+            patterns.splice(selected.index, 1);
+            await config.update('folderPatterns', patterns, vscode.ConfigurationTarget.Workspace);
+            vscode.window.showInformationMessage(`Removed: ${currentPattern.name}`);
+            configManager.reload();
+            treeProvider.refresh();
+          }
+        }
       }
+    })
+  );
+
+  // Keep old command for backward compatibility
+  context.subscriptions.push(
+    vscode.commands.registerCommand('fabriqa.createOrEditSidebarConfig', async () => {
+      await vscode.commands.executeCommand('fabriqa.manageFolderPatterns');
     })
   );
 

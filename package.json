@@ -145,6 +145,12 @@
         "icon": "resources/icon-simple.svg"
       },
       {
+        "command": "fabriqa.manageFolderPatterns",
+        "title": "Manage Folder Patterns",
+        "category": "fabriqa",
+        "icon": "$(folder-library)"
+      },
+      {
         "command": "fabriqa.createOrEditSidebarConfig",
         "title": "Create/Edit Sidebar Config",
         "category": "fabriqa",
@@ -209,12 +215,17 @@
         {
           "command": "fabriqa.createFile",
           "when": "view == fabriqa.markdownTree",
-          "group": "navigation"
+          "group": "navigation@1"
+        },
+        {
+          "command": "fabriqa.manageFolderPatterns",
+          "when": "view == fabriqa.markdownTree",
+          "group": "navigation@2"
         },
         {
           "command": "fabriqa.refreshTree",
           "when": "view == fabriqa.markdownTree",
-          "group": "navigation"
+          "group": "navigation@3"
         }
       ],
       "view/item/context": [
@@ -325,6 +336,27 @@
           "type": "boolean",
           "default": false,
           "description": "Enable debug logging (creates log files in .vscode/logs and shows detailed console output)"
+        },
+        "fabriqa.folderPatterns": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Display name for this section in the sidebar"
+              },
+              "pattern": {
+                "type": "string",
+                "description": "Glob pattern for markdown files (e.g., 'specs/**/*.md')"
+              }
+            },
+            "required": ["name", "pattern"]
+          },
+          "default": [
+            { "name": "Markdown Files", "pattern": "**/*.md" }
+          ],
+          "description": "Folder patterns with display names for the sidebar. Each item has 'name' (section title) and 'pattern' (glob pattern)."
         }
       }
     },
