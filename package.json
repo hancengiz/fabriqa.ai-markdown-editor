@@ -2,7 +2,7 @@
   "name": "fabriqa-markdown-editor",
   "displayName": "fabriqa - markdown editor - obsidian style",
   "description": "Obsidian-like markdown editor with Live Preview, Source, and Reading modes",
-  "version": "0.12.0",
+  "version": "0.13.0",
   "publisher": "fabriqaai",
   "icon": "resources/icon.png",
   "engines": {
@@ -351,10 +351,16 @@
                 "description": "Glob pattern for markdown files (e.g., 'specs/**/*.md')"
               }
             },
-            "required": ["name", "pattern"]
+            "required": [
+              "name",
+              "pattern"
+            ]
           },
           "default": [
-            { "name": "Markdown Files", "pattern": "**/*.md" }
+            {
+              "name": "Markdown Files",
+              "pattern": "**/*.md"
+            }
           ],
           "description": "Folder patterns with display names for the sidebar. Each item has 'name' (section title) and 'pattern' (glob pattern)."
         }
