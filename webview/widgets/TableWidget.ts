@@ -82,6 +82,36 @@ export class TableWidget extends WidgetType {
         return { headers, alignments, rows };
     }
 
+    /**
+     * Parse inline markdown formatting and convert to HTML
+     * Supports: **bold**, __bold__, *italic*, _italic_, `code`, ~~strikethrough~~
+     */
+    parseInlineMarkdown(text: string): string {
+        // First escape HTML entities to prevent XSS
+        let html = text
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+
+        // Parse inline code first (to avoid conflicts with other patterns)
+        html = html.replace(/`([^`]+)`/g, '<code style="background-color: rgba(175, 184, 193, 0.2); padding: 2px 4px; border-radius: 3px; font-family: monospace;">$1</code>');
+
+        // Parse bold: **text** or __text__ (must come before italic)
+        html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+        html = html.replace(/__([^_]+)__/g, '<strong>$1</strong>');
+
+        // Parse italic: *text* or _text_
+        html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+        html = html.replace(/_([^_]+)_/g, '<em>$1</em>');
+
+        // Parse strikethrough: ~~text~~
+        html = html.replace(/~~([^~]+)~~/g, '<del>$1</del>');
+
+        return html;
+    }
+
     createHTMLTable(table: { headers: string[], alignments: string[], rows: string[][] }, theme: any): HTMLElement {
         const tableEl = document.createElement('table');
         tableEl.style.cssText = `
@@ -97,7 +127,7 @@ export class TableWidget extends WidgetType {
         const headerRow = document.createElement('tr');
         table.headers.forEach((header, i) => {
             const th = document.createElement('th');
-            th.textContent = header;
+            th.innerHTML = this.parseInlineMarkdown(header);
             th.style.cssText = `
         border: 1px solid ${theme.borderColor.muted};
         padding: 8px 12px;
@@ -117,7 +147,7 @@ export class TableWidget extends WidgetType {
             const tr = document.createElement('tr');
             row.forEach((cell, i) => {
                 const td = document.createElement('td');
-                td.textContent = cell;
+                td.innerHTML = this.parseInlineMarkdown(cell);
                 td.style.cssText = `
           border: 1px solid ${theme.borderColor.muted};
           padding: 8px 12px;
