@@ -1326,6 +1326,9 @@ export const readingModePlugin = ViewPlugin.fromClass(
         // Update content
         this.htmlContainer.innerHTML = cleanHtml;
 
+        // Resolve relative image paths
+        this.resolveImagePaths();
+
         // Add icons to GitHub alerts
         this.addGitHubAlertIcons();
 
@@ -1347,6 +1350,41 @@ export const readingModePlugin = ViewPlugin.fromClass(
           `;
         }
       }
+    }
+
+    /**
+     * Resolve relative image paths to webview URIs
+     * Uses the base URI from the document's directory
+     */
+    resolveImagePaths() {
+      if (!this.htmlContainer) return;
+
+      const baseUri = document.body.getAttribute('data-base-uri');
+      if (!baseUri) {
+        console.warn('[ReadingMode] No base URI available for resolving image paths');
+        return;
+      }
+
+      const images = this.htmlContainer.querySelectorAll('img[src]');
+      images.forEach((img) => {
+        const src = (img as HTMLImageElement).getAttribute('src');
+        if (!src) return;
+
+        // Skip absolute URLs (http, https, data)
+        if (src.match(/^(https?:|data:)/i)) return;
+
+        // Resolve relative path
+        let relativePath = src;
+        if (relativePath.startsWith('./')) {
+          relativePath = relativePath.substring(2);
+        }
+
+        // Combine base URI with relative path
+        const resolvedUrl = `${baseUri}/${relativePath}`;
+        console.log('[ReadingMode] Resolved image path:', src, '->', resolvedUrl);
+
+        (img as HTMLImageElement).src = resolvedUrl;
+      });
     }
 
     /**

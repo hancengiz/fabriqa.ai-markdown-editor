@@ -157,14 +157,25 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
     // Note: Custom editors don't receive selection information from search results
     // This is a limitation of VS Code's Custom Editor API
 
+    // Get the document's directory for local resource access
+    const documentDir = vscode.Uri.file(path.dirname(document.uri.fsPath));
+
+    // Get workspace folders for additional resource access
+    const workspaceFolders = vscode.workspace.workspaceFolders?.map(f => f.uri) || [];
+
     // Configure webview
     webviewPanel.webview.options = {
       enableScripts: true,
       localResourceRoots: [
         vscode.Uri.file(path.join(this.context.extensionPath, 'dist')),
-        vscode.Uri.file(path.join(this.context.extensionPath, 'webview'))
+        vscode.Uri.file(path.join(this.context.extensionPath, 'webview')),
+        documentDir,
+        ...workspaceFolders
       ]
     };
+
+    // Create base URI for resolving relative paths in webview
+    const documentBaseUri = webviewPanel.webview.asWebviewUri(documentDir).toString();
 
     // Get default mode from settings
     const config = vscode.workspace.getConfiguration('fabriqa');
@@ -189,7 +200,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
     });
 
     // Set initial HTML content
-    webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview);
+    webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview, documentBaseUri);
 
     // Send initial document content to webview
     this.updateWebview(webviewPanel.webview, document);
@@ -1119,7 +1130,7 @@ ${bodyContent}
   /**
    * Get HTML content for webview
    */
-  private getHtmlForWebview(webview: vscode.Webview): string {
+  private getHtmlForWebview(webview: vscode.Webview, documentBaseUri?: string): string {
     // Get URIs for scripts and styles
     const scriptUri = webview.asWebviewUri(
       vscode.Uri.file(path.join(this.context.extensionPath, 'dist', 'webview.js'))
@@ -1152,7 +1163,7 @@ ${bodyContent}
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${cspSource} 'unsafe-inline'; script-src ${cspSource}; img-src https: data:;">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${cspSource} 'unsafe-inline'; script-src ${cspSource}; img-src ${cspSource} https: data:;">
   <title>fabriqa Markdown Editor</title>
   <link rel="stylesheet" href="${vscodeVariablesUri}">
   <link rel="stylesheet" href="${cssUri}">
@@ -1206,7 +1217,7 @@ ${bodyContent}
     }
   </style>
 </head>
-<body data-theme="${themeType}" data-mode="${defaultMode}" class="bg-editor-background text-editor-foreground h-screen flex flex-col overflow-hidden">
+<body data-theme="${themeType}" data-mode="${defaultMode}" data-base-uri="${documentBaseUri || ''}" class="bg-editor-background text-editor-foreground h-screen flex flex-col overflow-hidden">
   
   <div class="editor-container h-full flex flex-col bg-editor-background">
     <div class="editor-instance h-full flex flex-col">

@@ -14,6 +14,40 @@ export class ImageWidget extends WidgetType {
         super();
     }
 
+    /**
+     * Resolve relative image URL to absolute webview URI
+     * Uses the base URI from the document's directory
+     */
+    private resolveImageUrl(url: string): string {
+        // If it's already an absolute URL (http, https, data), use as-is
+        if (url.match(/^(https?:|data:)/i)) {
+            return url;
+        }
+
+        // Get base URI from the body data attribute (set by extension)
+        const baseUri = document.body.getAttribute('data-base-uri');
+
+        if (!baseUri) {
+            // No base URI available, return original URL
+            console.warn('[ImageWidget] No base URI available for relative path:', url);
+            return url;
+        }
+
+        // Handle relative paths
+        // Remove leading ./ if present
+        let relativePath = url;
+        if (relativePath.startsWith('./')) {
+            relativePath = relativePath.substring(2);
+        }
+
+        // Combine base URI with relative path
+        // baseUri ends without slash, so we add one
+        const resolvedUrl = `${baseUri}/${relativePath}`;
+        console.log('[ImageWidget] Resolved relative path:', url, '->', resolvedUrl);
+
+        return resolvedUrl;
+    }
+
     toDOM() {
         const wrapper = document.createElement('span');
         wrapper.className = 'cm-image-wrapper';
@@ -25,7 +59,7 @@ export class ImageWidget extends WidgetType {
     `;
 
         const img = document.createElement('img');
-        img.src = this.url;
+        img.src = this.resolveImageUrl(this.url);
         img.alt = this.alt;
         img.title = this.alt;
         img.style.cssText = `
