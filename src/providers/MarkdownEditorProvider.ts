@@ -1208,7 +1208,7 @@ ${bodyContent}
 </head>
 <body data-theme="${themeType}" data-mode="${defaultMode}" class="bg-editor-background text-editor-foreground h-screen flex flex-col overflow-hidden">
   
-  <div class="editor-container h-full flex flex-col bg-white dark:bg-[#1e1e1e]">
+  <div class="editor-container h-full flex flex-col bg-editor-background">
     <div class="editor-instance h-full flex flex-col">
       
       <!-- Header / Toolbar -->
