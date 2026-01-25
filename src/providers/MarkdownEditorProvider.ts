@@ -1240,10 +1240,9 @@ ${bodyContent}
               </div>
             </div>
             
-            <!-- Right Sidebar / Comments (Placeholder) -->
-            <div class="relative min-w-0 w-80 shrink-1 hidden lg:block">
-              <!-- Comment UI would go here -->
-            </div>
+            <!-- Right Sidebar / Comments (Placeholder - hidden for now) -->
+            <!-- <div class="relative min-w-0 w-80 shrink-1 hidden lg:block bg-editor-background">
+            </div> -->
           </div>
         </div>
       </div>
