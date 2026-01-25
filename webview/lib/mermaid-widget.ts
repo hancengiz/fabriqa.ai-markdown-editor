@@ -273,8 +273,8 @@ export class MermaidDiagramWidget extends WidgetType {
           });
         }
 
-        // Reset container to default size
-        container.style.width = 'fit-content';
+        // Reset container to default size (full width)
+        container.style.width = '100%';
         container.style.height = 'auto';
       });
     }
@@ -451,8 +451,30 @@ export class MermaidDiagramWidget extends WidgetType {
       // Render the diagram
       const { svg } = await mermaid.render(this.diagramId, this.code);
 
-      // Replace loading with SVG - render as-is
+      // Replace loading with SVG
       diagramContainer.innerHTML = svg;
+
+      // Make SVG responsive - expand to full width while maintaining aspect ratio
+      const svgElement = diagramContainer.querySelector('svg');
+      if (svgElement) {
+        // Get original dimensions for viewBox
+        const originalWidth = svgElement.getAttribute('width');
+        const originalHeight = svgElement.getAttribute('height');
+
+        // Ensure viewBox is set for proper scaling
+        if (!svgElement.getAttribute('viewBox') && originalWidth && originalHeight) {
+          const width = parseFloat(originalWidth);
+          const height = parseFloat(originalHeight);
+          svgElement.setAttribute('viewBox', `0 0 ${width} ${height}`);
+        }
+
+        // Make SVG responsive
+        svgElement.style.width = '100%';
+        svgElement.style.height = 'auto';
+        svgElement.style.maxWidth = '100%';
+        svgElement.removeAttribute('width');
+        svgElement.removeAttribute('height');
+      }
     } catch (error) {
       // Show error
       console.error('Failed to render mermaid diagram:', error);

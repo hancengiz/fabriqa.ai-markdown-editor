@@ -1582,7 +1582,7 @@ export const readingModePlugin = ViewPlugin.fromClass(
           // Parse size from HTML comment (same as Live Preview mode)
           // Format: %% {"editorSize": {"width": 600, "height": 400}} %%
           const sizeMatch = mermaidCode.match(/%% \{"editorSize": \{"width": (\d+), "height": (\d+)\}\} %%/);
-          const customWidth = sizeMatch ? `${sizeMatch[1]}px` : 'fit-content';
+          const customWidth = sizeMatch ? `${sizeMatch[1]}px` : '100%';
           const customHeight = sizeMatch ? `${sizeMatch[2]}px` : 'auto';
 
           // Generate unique ID for this diagram
@@ -1608,6 +1608,28 @@ export const readingModePlugin = ViewPlugin.fromClass(
             max-width: 100%;
             display: block;
           `;
+
+          // Make SVG responsive - expand to full width while maintaining aspect ratio
+          const svgElement = container.querySelector('svg');
+          if (svgElement) {
+            // Get original dimensions for viewBox
+            const originalWidth = svgElement.getAttribute('width');
+            const originalHeight = svgElement.getAttribute('height');
+
+            // Ensure viewBox is set for proper scaling
+            if (!svgElement.getAttribute('viewBox') && originalWidth && originalHeight) {
+              const width = parseFloat(originalWidth);
+              const height = parseFloat(originalHeight);
+              svgElement.setAttribute('viewBox', `0 0 ${width} ${height}`);
+            }
+
+            // Make SVG responsive
+            svgElement.style.width = '100%';
+            svgElement.style.height = 'auto';
+            svgElement.style.maxWidth = '100%';
+            svgElement.removeAttribute('width');
+            svgElement.removeAttribute('height');
+          }
 
           // Replace the pre element with the rendered diagram
           preElement.replaceWith(container);
