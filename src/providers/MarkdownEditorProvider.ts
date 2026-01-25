@@ -1173,7 +1173,11 @@ ${bodyContent}
       --font-size: ${fontSize}px;
       --line-height: ${lineHeight};
     }
-    
+
+    html {
+      background-color: var(--vscode-editor-background, #ffffff);
+    }
+
     body {
       font-family: var(--vscode-font-family, 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif);
       font-size: var(--vscode-font-size, 13px);
@@ -1226,10 +1230,10 @@ ${bodyContent}
 
 
       <!-- Main Editor Area -->
-      <div class="w-full min-h-0 flex-grow overflow-auto jetski-scrollable-element relative">
-        <div class="relative w-full h-full">
-          <div class="w-full flex h-full relative">
-            <div class="relative pl-4 pr-4 py-1 min-w-0 grow h-fit">
+      <div class="w-full min-h-0 flex-grow overflow-auto jetski-scrollable-element relative bg-editor-background">
+        <div class="relative w-full h-full bg-editor-background">
+          <div class="w-full flex h-full relative bg-editor-background">
+            <div class="relative pl-4 pr-4 py-1 min-w-0 grow h-fit bg-editor-background">
               <!-- Editor Content Mount Point -->
               <div id="editor" class="leading-relaxed select-text text-sm flex flex-col min-h-[500px]">
                 <div class="loading">Loading editor...</div>
