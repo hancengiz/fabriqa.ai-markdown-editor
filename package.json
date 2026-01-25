@@ -28,10 +28,10 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/hancengiz/fabriqa.ai-markdown-editor.git"
+    "url": "https://github.com/fabriqaai/fabriqa.ai-markdown-editor.git"
   },
   "bugs": {
-    "url": "https://github.com/hancengiz/fabriqa.ai-markdown-editor/issues"
+    "url": "https://github.com/fabriqaai/fabriqa.ai-markdown-editor/issues"
   },
   "homepage": "https://fabriqa.ai",
   "license": "MIT",
