@@ -10,20 +10,20 @@ An Obsidian-like markdown editor extension for Visual Studio Code with three edi
 
 ## Screenshots
 
-### Organized Sidebar & Live Preview Mode
-![fabriqa.ai sidebar with markdown files organized by sections](https://raw.githubusercontent.com/hancengiz/fabriqa.ai-markdown-editor/master/screenshots/screenshot-1.png)
+### Mermaid Diagram Support
+![Mermaid sequence diagram rendered in Live Preview mode](screenshots/screenshot-1.png)
 
-The extension provides a custom sidebar to organize your markdown files by sections using glob patterns. Files are automatically discovered and grouped based on your configuration.
+Create beautiful diagrams using Mermaid syntax. In Live Preview mode, diagrams are rendered automatically. Supports all Mermaid diagram types: flowcharts, sequence diagrams, class diagrams, state diagrams, ER diagrams, Gantt charts, pie charts, and more.
 
 ### Mode Switching Menu
-![Mode switching menu showing Live Preview, Source, and Reading modes](https://raw.githubusercontent.com/hancengiz/fabriqa.ai-markdown-editor/master/screenshots/screenshot-2.png)
+![Mode switching menu showing Live Preview, Source, and Reading modes](screenshots/screenshot-2.png)
 
 Quickly switch between editing modes using the settings menu in the editor toolbar, or use keyboard shortcuts for faster navigation.
 
-### Mermaid Diagram Support
-![Mermaid sequence diagram rendered in Live Preview mode with View Code button](https://raw.githubusercontent.com/hancengiz/fabriqa.ai-markdown-editor/master/screenshots/screenshot-3.png)
+### Frontmatter Widget
+![Frontmatter properties widget showing metadata fields](screenshots/screenshot-3.png)
 
-Create beautiful diagrams using Mermaid syntax. In Live Preview mode, diagrams are rendered automatically with a "View Code" button to toggle back to source. Supports all Mermaid diagram types: flowcharts, sequence diagrams, class diagrams, state diagrams, ER diagrams, Gantt charts, pie charts, and more.
+View and organize your document metadata with the collapsible frontmatter widget. Supports various data types including strings, dates, booleans, arrays (rendered as colorful pills), and long text descriptions.
 
 ## Features
 
