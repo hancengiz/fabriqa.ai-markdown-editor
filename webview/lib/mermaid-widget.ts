@@ -96,7 +96,7 @@ export class MermaidDiagramWidget extends WidgetType {
     // Parse size from HTML comment (works for all diagram types)
     // Format: %% {"editorSize": {"width": 600, "height": 400}} %%
     const sizeMatch = this.code.match(/%% \{"editorSize": \{"width": (\d+), "height": (\d+)\}\} %%/);
-    const customWidth = sizeMatch ? `${sizeMatch[1]}px` : '100%';
+    const customWidth = sizeMatch ? `${sizeMatch[1]}px` : '80%';
     const customHeight = sizeMatch ? `${sizeMatch[2]}px` : 'auto';
     const hasCustomSize = !!sizeMatch;
 
@@ -274,8 +274,8 @@ export class MermaidDiagramWidget extends WidgetType {
           });
         }
 
-        // Reset container to default size (full width)
-        container.style.width = '100%';
+        // Reset container to default size (80% width)
+        container.style.width = '80%';
         container.style.height = 'auto';
       });
     }

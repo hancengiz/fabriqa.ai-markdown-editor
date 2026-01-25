@@ -1587,7 +1587,7 @@ export const readingModePlugin = ViewPlugin.fromClass(
           // Parse size from HTML comment (same as Live Preview mode)
           // Format: %% {"editorSize": {"width": 600, "height": 400}} %%
           const sizeMatch = mermaidCode.match(/%% \{"editorSize": \{"width": (\d+), "height": (\d+)\}\} %%/);
-          const customWidth = sizeMatch ? `${sizeMatch[1]}px` : '100%';
+          const customWidth = sizeMatch ? `${sizeMatch[1]}px` : '80%';
           const customHeight = sizeMatch ? `${sizeMatch[2]}px` : 'auto';
 
           // Generate unique ID for this diagram
