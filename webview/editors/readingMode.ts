@@ -33,6 +33,36 @@ export const readingModePlugin = ViewPlugin.fromClass(
         theme: 'default',
         securityLevel: 'loose',
         fontFamily: '-apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif',
+        flowchart: {
+          useMaxWidth: true,
+          htmlLabels: true,
+          curve: 'basis',
+        },
+        sequence: {
+          useMaxWidth: true,
+          diagramMarginX: 50,
+          diagramMarginY: 10,
+          actorMargin: 50,
+          width: 150,
+          height: 65,
+        },
+        gantt: {
+          barHeight: 24,
+          barGap: 6,
+          topPadding: 60,
+          leftPadding: 100,
+          fontSize: 13,
+          sectionFontSize: 13,
+          useMaxWidth: true,
+        },
+        pie: {
+          useMaxWidth: true,
+          textPosition: 0.75,
+        },
+        er: {
+          useMaxWidth: true,
+          fontSize: 14,
+        },
       });
 
       this.mermaidInitialized = true;
@@ -179,7 +209,7 @@ export const readingModePlugin = ViewPlugin.fromClass(
   left: 0;
   right: 0;
   bottom: 0;
-  padding: 16px 32px;
+  padding: 16px 24px;
   overflow: auto;
   box-sizing: border-box;
   color: var(--fgColor-default);

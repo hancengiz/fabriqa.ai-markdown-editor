@@ -23,18 +23,43 @@ function initMermaid() {
     theme: 'default',
     securityLevel: 'loose',
     fontFamily: '-apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif',
+    flowchart: {
+      useMaxWidth: true,
+      htmlLabels: true,
+      curve: 'basis',
+    },
+    sequence: {
+      useMaxWidth: true,
+      diagramMarginX: 50,
+      diagramMarginY: 10,
+      actorMargin: 50,
+      width: 150,
+      height: 65,
+      boxMargin: 10,
+      boxTextMargin: 5,
+      noteMargin: 10,
+      messageMargin: 35,
+    },
     gantt: {
       titleTopMargin: 25,
-      barHeight: 20,
-      barGap: 4,
-      topPadding: 50,
-      leftPadding: 75,
+      barHeight: 24,
+      barGap: 6,
+      topPadding: 60,
+      leftPadding: 100,
       gridLineStartPadding: 35,
-      fontSize: 11,
-      sectionFontSize: 11,
+      fontSize: 13,
+      sectionFontSize: 13,
       numberSectionStyles: 4,
       axisFormat: '%Y-%m-%d',
-      useWidth: 1200, // Wider default width for better text spacing
+      useMaxWidth: true,
+    },
+    pie: {
+      useMaxWidth: true,
+      textPosition: 0.75,
+    },
+    er: {
+      useMaxWidth: true,
+      fontSize: 14,
     },
   });
 
@@ -70,7 +95,7 @@ export class MermaidDiagramWidget extends WidgetType {
     // Parse size from HTML comment (works for all diagram types)
     // Format: %% {"editorSize": {"width": 600, "height": 400}} %%
     const sizeMatch = this.code.match(/%% \{"editorSize": \{"width": (\d+), "height": (\d+)\}\} %%/);
-    const customWidth = sizeMatch ? `${sizeMatch[1]}px` : 'fit-content';
+    const customWidth = sizeMatch ? `${sizeMatch[1]}px` : '100%';
     const customHeight = sizeMatch ? `${sizeMatch[2]}px` : 'auto';
     const hasCustomSize = !!sizeMatch;
 
